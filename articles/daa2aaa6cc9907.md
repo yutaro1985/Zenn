@@ -1,3 +1,10 @@
+---
+title: "AWSを使うにあたりIAMのベストプラクティスをもう一度確認する"
+emoji: "🔑"
+type: "tech" # tech: 技術記事 / idea: アイデア
+topics: ["aws","iam","security"]
+published: true
+---
 :::message
 この記事は[AWS その2 Advent Calendar 2020](https://qiita.com/advent-calendar/2020/aws2)の20日目です。
 :::
