@@ -1,5 +1,8 @@
 {
+  "filters": {},
   "rules": {
-    "preset-ja-technical-writing": true
+    "preset-ja-spacing": true,
+    "preset-ja-technical-writing": true,
+    "spellcheck-tech-word": true
   }
 }
