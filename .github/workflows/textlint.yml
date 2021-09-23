@@ -40,14 +40,14 @@ jobs:
             node-
 
       - name: Install textlint
-        run:  'npm install --save-dev textlint textlint-rule-preset-ja-spacing  textlint-rule-preset-ja-technical-writing textlint-rule-spellcheck-tech-word'
+        run:  'npm install --save-dev textlint textlint-rule-preset-ja-spacing textlint-rule-preset-ja-technical-writing textlint-rule-spellcheck-tech-word'
       
       - name: Install dependent module
         run: npm install
       
       - name: Execute textlint for ブログ記事
         run: |
-          npx textlint -f checkstyle "articles/*.md" >> .textlint.log
+          npx textlint -f checkstyle "articles/*.md" | tee -a .textlint.log
 
       - name: Run reviewdog
         # textlintで文章上のミスがあった場合のみ、reviewdogを実行させるようにする
