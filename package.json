@@ -19,5 +19,9 @@
   "homepage": "https://github.com/yutaro1985/Zenn#readme",
   "dependencies": {
     "zenn-cli": "^0.1.96"
+  },
+  "devDependencies": {
+    "textlint": "^12.0.2",
+    "textlint-rule-preset-ja-technical-writing": "^7.0.0"
   }
 }
