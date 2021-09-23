@@ -47,7 +47,7 @@ jobs:
       
       - name: Execute textlint for ブログ記事
         run: |
-          npx textlint -f checkstyle "articles/*.md" | tee -a .textlint.log
+          npx textlint -f checkstyle "articles/*.md" >> .textlint.log
 
       - name: Run reviewdog
         # textlintで文章上のミスがあった場合のみ、reviewdogを実行させるようにする
