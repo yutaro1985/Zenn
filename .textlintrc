@@ -1,6 +1,9 @@
 {
   "filters": {},
   "rules": {
+    "prh": {
+      "rulePaths" :[".github/workflows/rules/WEB+DB_PRESS.yml"]
+    },
     "preset-ja-spacing": true,
     "preset-ja-technical-writing": true,
     "spellcheck-tech-word": true
