@@ -18,6 +18,7 @@
   },
   "homepage": "https://github.com/yutaro1985/Zenn#readme",
   "dependencies": {
+    "textlint-rule-prh": "^5.3.0",
     "zenn-cli": "^0.1.96"
   },
   "devDependencies": {
