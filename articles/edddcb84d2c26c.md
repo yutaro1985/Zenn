@@ -91,9 +91,9 @@ Automationを実行するためにその内容を定義しましょう。
 Systems Managerのコンソールから「ドキュメント」を選択し、Create documentからAutomationを選択します。
 このとき、実行したいリージョンになっていることを確認しましょう。
 
-![Systems Managerコンソールからドキュメント作成](/articles/images/SystemsManeger_document.png)
+![Systems Managerコンソールからドキュメント作成](/images/SystemsManeger_document.png)
 
-![Automation作成](/articles/images/Automation.png)
+![Automation作成](/images/Automation.png)
 
 SSM Documentの編集は以前は面倒そのものでしたが、今はだいぶ楽になっています。
 ただ、今回はやることが決まっているのでエディタから下記を入力します。
@@ -114,7 +114,7 @@ mainSteps:
 名前の欄はChatbotのロールやポリシーで個別にドキュメントを指定するならそちらと名前が一致する必要があります。
 今回は特定のインスタンスIDに対してRunShellScriptで`echo "Hello,World!"`とコマンド実行させるだけのAutomationです。
 
-![Automation作成画面](/articles/images/Document_editor.png)
+![Automation作成画面](/images/Document_editor.png)
 
 ### Slackでワークフローを作成する
 
@@ -124,19 +124,19 @@ Chatbotを連携させたチャンネルでワークフローを作ります。
 
 Slackの入力欄の左に雷のようなマークがあるのでそちらを押すと、選択肢にワークフロービルダーがあるのでそちらを選択します。
 
-![Slack入力欄](/articles/images/Slack_lightning.png)を押して![ワークフロービルダーを開く](/articles/images/workflow_builder.png)を押す。
+![Slack入力欄](/images/Slack_lightning.png)を押して![ワークフロービルダーを開く](/images/workflow_builder.png)を押す。
 
 その後画面に従って作成していきます。
 
 名前は任意です。
-![ワークフローの名前](/articles/images/workflow1.png)
+![ワークフローの名前](/images/workflow1.png)
 今回はショートカットからの起動を選択します。
-![ショートカットで起動](/articles/images/workflow2.png)
+![ショートカットで起動](/images/workflow2.png)
 次にこれはワークフローを起動するショートカットを追加するチャンネルを選ぶところなのでどこを選んでもかまいません。
-![ショートカット追加チャンネルの選択](/articles/images/workflow3.png)
+![ショートカット追加チャンネルの選択](/images/workflow3.png)
 
 次にワークフローステップの追加で「メッセージの送信」を選択します。
-![メッセージの送信の追加](/articles/images/workflow4.png)
+![メッセージの送信の追加](/images/workflow4.png)
 
 その次にはメッセージの送信内容を定義します。
 メッセージの送信先は、AWS Chatbotと連携したチャンネルにしてください。
@@ -150,7 +150,7 @@ Slackの入力欄の左に雷のようなマークがあるのでそちらを押
 @aws ssm start-automation-execution --document-name HogeAutomation --region ap-northeast-1
 ```
 
-![メッセージの内容詳細設定](/articles/images/workflow5.png)
+![メッセージの内容詳細設定](/images/workflow5.png)
 
 ここまで完了したら、「公開する」を押してワークフローを公開します。
 このワークフローが同じ組織の中に公開されます。
@@ -158,7 +158,7 @@ Slackの入力欄の左に雷のようなマークがあるのでそちらを押
 ワークフローを作成したチャンネルで先程の雷のボタンを押すと、作成したワークフローがあるはずです。
 試しに実行してみましょう。
 
-![Slack入力欄](/articles/images/Slack_lightning.png)
+![Slack入力欄](/images/Slack_lightning.png)
 
 うまく行けばAutomationが実行され、Automationの実行ログをコンソールで確認するとHello,World!が出力されているはずです。
 
