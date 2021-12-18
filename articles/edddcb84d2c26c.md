@@ -3,7 +3,7 @@ title: "AWS ChatbotとSlackのWorkflowを使ってSlackから特定のインス�
 emoji: "🐥"
 type: "tech" # tech: 技術記事 / idea: アイデア
 topics: ["aws","chatbot","slack","systemsmanager"]
-published: false
+published: true
 ---
 
 :::message
