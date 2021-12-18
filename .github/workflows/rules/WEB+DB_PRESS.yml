@@ -3033,3 +3033,5 @@ rules:
     pattern:  /はは/
   - expected: "WEB+DB PRESS"
     pattern:  /WEB\+DB PRESS/i
+  - expected: "re:Invent"
+    pattern:  "Re:Invent"
