@@ -1103,8 +1103,6 @@ rules:
     expected: 汚$1
   - pattern: /果([さしすせそ])/
     expected: 果た$1
-  - pattern: /([^排人])他([^ァ-ヶ社者人方])/
-    expected: $1ほか$2
   - pattern: 後ほど
     expected: のちほど
   - pattern: うしろ
