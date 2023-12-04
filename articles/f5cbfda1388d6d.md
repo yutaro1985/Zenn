@@ -47,23 +47,23 @@ Developer's IOの記事では単純なEC2インスタンス作成を記録して
 
 下記のように設定しています。
 
-![起動テンプレートの設定1](../images/Launch-template-settings1.png)
-![起動テンプレートの設定2](../images/Launch-template-settings2.png)
+![起動テンプレートの設定1](/images/Launch-template-settings1.png)
+![起動テンプレートの設定2](/images/Launch-template-settings2.png)
 
 詳細設定には別途作ったIAMロールを割り当てる設定をしています。
-![起動テンプレートのIAMロール設定](../images/IAM-attachment-to-EC2.png)
+![起動テンプレートのIAMロール設定](/images/IAM-attachment-to-EC2.png)
 
 この設定で起動テンプレートを作成しました。
-![起動テンプレートの作成完了](../images/Launch-template-created.png)
+![起動テンプレートの作成完了](/images/Launch-template-created.png)
 
 この時点でConsole-to-codeを覗いてみましょう。
 Console-to-codeはEC2のコンソール上からアクセスできます。
 
-![Console-to-codeのアクセス](../images/Console-to-Code-on-Console.png)
+![Console-to-codeのアクセス](/images/Console-to-Code-on-Console.png)
 
 すると、起動テンプレートの作成もちゃんと記録されています。
 
-![起動テンプレートでのConsole-to-code](../images/Console-to-code-launch-template.png)
+![起動テンプレートでのConsole-to-code](/images/Console-to-code-launch-template.png)
 
 今回はCDKのTypeScriptコードを生成してみます。
 
@@ -111,11 +111,11 @@ export class CdkStack extends cdk.Stack {
 
 どうやら、APIコールをどんどん記録してくれそうですね。
 
-![記録されるアクション](../images/Actions-to-be-recorded.png)
+![記録されるアクション](/images/Actions-to-be-recorded.png)
 
 せっかくなのでコード化するのがとってもめんどくさい（当社比）AutoScaling Groupをオプション盛り盛りで作り、それをコード化してみましょう。
 
-![AutoScaling Groupを作ったAPIコールの跡](../images/Try-to-create-Autoscaling-group.png)
+![AutoScaling Groupを作ったAPIコールの跡](/images/Try-to-create-Autoscaling-group.png)
 
 このように複数の操作を組み合わせて連携させたコードも作れるのですが、どうやらたくさんのアクションを選ぶエラーになるようです。
 一括選択ができるのですが、1つずつ選ぶと5個までしか選べないのでおそらくそこが限界です。
@@ -194,11 +194,11 @@ Amazon Qについて記事を書くと別の記事が書けてしまうので詳
 [[やってみた]Amazon Q in IDEsで、Amazon QとAmazon CodeWhispererの組み合わせを使ってみた #AWSreInvent](https://dev.classmethod.jp/articles/try-amazon-q-for-ides/)
 
 AWS ToolkitをVSCodeに入れているので、サブメニューからRefactorを選択してみました。
-![VSCodeでのAmazon Q利用](../images/AmazonQ_in_VSCode.png)
+![VSCodeでのAmazon Q利用](/images/AmazonQ_in_VSCode.png)
 
 結果はこんな感じです。
 
-![Amazon Qによるレビュー](../images/refactor_generated_code_by_Q.png)
+![Amazon Qによるレビュー](/images/refactor_generated_code_by_Q.png)
 
 これを使えばコンソールからコードを生成して、それをレビューしてもらうまでの一連の流れが効率化できる未来があるかもしれません。
 
