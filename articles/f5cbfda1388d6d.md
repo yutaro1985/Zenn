@@ -8,7 +8,7 @@ published: true
 
 :::message
 この記事は
-[みすてむず いず みすきーしすてむず (3) Advent Calendar 2023](https://adventar.org/calendars/8615)
+[みすてむず いず みすきーしすてむず (3) Advent Calendar 2023](https://adventar.org/calendars/8615)[^1]
 および
 [AWS（Amazon Web Services） Advent Calendar 2023](https://qiita.com/advent-calendar/2020/aws2)の4日目
 です。
@@ -209,3 +209,5 @@ AWS ToolkitをVSCodeに入れているので、サブメニューからRefactor�
 適当にやってみた記事になってしまいましたが、今後の展開が楽しみなサービスですね。
 EC2以外のサービスにも早く対応してくれると楽になるので期待したいです。
 re:Inventでは生成系AIに関することが多数発表されたので、この記事でネタにしたサービスたちの精度が上がって効率的に運用できる未来が来ることを楽しみにしています。
+
+[^1]: [みすてむず いず みすきーしすてむず](https://misskey.systems/) とは、オープンソースのプラットフォームMisskeyのインスタンスのひとつで、主にITに関わる人が参加しています。最近はXよりもそちらに入り浸っています。
