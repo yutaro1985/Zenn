@@ -110,7 +110,7 @@ export class CdkStack extends cdk.Stack {
 > - Created the LaunchTemplateData property object from the CLI command.
 > - Used the ec2.CfnLaunchTemplate construct to create the launch template with name 'test' and provided launch template data.
 
-どうやら、APIコールをどんどん記録してくれそうですね。
+試しにAutoScaling Groupを作ってみたのですが、どうやらAPIコールをどんどん記録してくれそうですね。
 
 ![記録されるアクション](/images/Actions-to-be-recorded.png)
 
@@ -118,9 +118,9 @@ export class CdkStack extends cdk.Stack {
 
 ![AutoScaling Groupを作ったAPIコールの跡](/images/Try-to-create-Autoscaling-group.png)
 
-このように複数の操作を組み合わせて連携させたコードも作れるのですが、どうやらたくさんのアクションを選ぶエラーになるようです。
+このように複数の操作を組み合わせて選択できるのですが、どうやらたくさんのアクションを選ぶエラーになるようです。
 一括選択ができるのですが、1つずつ選ぶと5個までしか選べないのでおそらくそこが限界です。
-ということなので、できるところまででコードを生成してみました。
+ということなので、できるところまで選択してコードを生成してみました。
 
 > Here is the generated CDK code:
 
