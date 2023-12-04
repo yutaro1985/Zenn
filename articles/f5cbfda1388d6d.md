@@ -1,5 +1,5 @@
 ---
-title: "Console-to-codeで生成したコードでEC2インスタンスを作り、Amazon Qにレビューさせてみる"
+title: "Console-to-codeで生成したコードでEC2インスタンスを作り、Amazon Qにレビューさせてみた"
 emoji: "⛳"
 type: "tech" # tech: 技術記事 / idea: アイデア
 topics: [aws]
