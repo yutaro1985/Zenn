@@ -54,7 +54,7 @@ Developer's IOの記事では単純なEC2インスタンス作成を記録して
 ![起動テンプレートのIAMロール設定](/images/IAM-attachment-to-EC2.png)
 
 この設定で起動テンプレートを作成しました。
-![起動テンプレートの作成完了](/images/Console-to-code-launch-template.png)
+![起動テンプレートの作成完了](/images/Complet-launch-template-creation.png)
 
 この時点でConsole-to-codeを覗いてみましょう。
 Console-to-codeはEC2のコンソール上からアクセスできます。
