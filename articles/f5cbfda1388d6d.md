@@ -68,7 +68,7 @@ Console-to-codeはEC2のコンソール上からアクセスできます。
 今回はCDKのTypeScriptコードを生成してみます。
 
 生成したコードは以下のとおりです。
-※アカウントIDは伏せています
+※アカウントIDは伏せています。
 
 > Here is the generated infrastructure as code:
 
