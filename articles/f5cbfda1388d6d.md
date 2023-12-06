@@ -27,7 +27,7 @@ Console-to-codeは例に漏れずDeveloper's IOですでに触れられていま
 この昨日は本記事執筆の2023/12/4次点ではパブリックプレビューであることにご注意ください。
 :::
 
-## Condole-to-codeとは
+## Console-to-codeとは
 
 引用したDeveloper's IOの記事にもありますが、あらためてこちらでも記載します。
 Console-to-codeとは、コンソールの操作をもとにCloudFormationやCDKのコードを生成するサービスです。
