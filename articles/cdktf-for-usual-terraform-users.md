@@ -3,7 +3,7 @@ title: "Terraformを普段触っている人がCDK for Terraformを触ってみ�
 emoji: "🧐"
 type: "tech" # tech: 技術記事 / idea: アイデア
 topics: ["terraform","cdk","cdktf"]
-published: false
+published: true
 ---
 
 :::message
