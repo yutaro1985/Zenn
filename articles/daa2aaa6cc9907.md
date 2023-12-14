@@ -265,4 +265,3 @@ IAMユーザーとかには何も考えずにAdministratorAccessを設定しが�
 参考
 [[AWS]管理ポリシーとインラインポリシーの違いが分からなかったので改めてIAMポリシーのお勉強をする](https://qiita.com/Batchi/items/a2dde3d2df27568cc078)
 [管理ポリシーとインラインポリシー](https://docs.aws.amazon.com/ja_jp/IAM/latest/UserGuide/access_policies_managed-vs-inline.html)
-
