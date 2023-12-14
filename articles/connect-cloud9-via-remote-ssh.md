@@ -3,7 +3,7 @@ title: "Cloud9の環境にVSCodeのRemote SSHで接続してみた"
 emoji: "🔗"
 type: "tech" # tech: 技術記事 / idea: アイデア
 topics: ["aws","vscode","cloud9","ssm"]
-published: false
+published: true
 ---
 
 :::message
