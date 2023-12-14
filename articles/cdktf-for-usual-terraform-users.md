@@ -435,6 +435,8 @@ Token.asAnyMap(vpc.outputsOutput)
 ```
 
 これによりVPCモジュールで作成したVPCのサブネットIDをEC2インスタンスに渡すことができました。
+※この時点のソースは以下コミットにあります
+@[card](https://github.com/yutaro1985/learn-cdktf-ts/tree/db1782f735daff4a9b2ea4a863ef97b8bf41c3e6)
 
 ## 感想
 
