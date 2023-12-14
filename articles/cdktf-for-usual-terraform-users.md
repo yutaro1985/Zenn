@@ -309,12 +309,132 @@ VPCは非常に必要なパラメータと関連リソースが多く、自分�
 cat *.tf | cdktf convert --language typescript > vpc.ts
 ```
 
-出力されたコードはそのまま使えないので手直しが必要ですが、ゼロから作るよりは大分マシです。
-また、今回は外部モジュールを使用するので、`cdktf.json`に使用するモジュール情報を記述します。
+~~出力されたコードはそのまま使えないので手直しが必要ですが、ゼロから作るよりは大分マシです。~~
 
-:::message
-すいませんが当日中に間に合わなかったのでWIPとしてこのあと追記します…
-:::
+結論からいうとこちらはリファクタにめちゃくちゃ時間かかりそうなので今回は断念しました。
+convertされたものを手直しするよりもぶっちゃけ作り直したほうが早そうです。
+
+その代わりと言ってはなんですが、GitHub上にあるHCLで書かれたモジュールをそのままプロジェクトに引っ張ってきて使ってみました。
+
+`cdktf.json`のterraforModulesに以下のように記述します。
+
+```json
+{
+  // terraformModules以外の記述は省略
+  "terraformModules": [
+    {
+      "name": "vpc",
+      "source": "git::https://github.com/yutaro1985/awesome-terraform-modules.git//vpc"
+    }
+  ]
+}
+```
+
+これによりGitHub上に公開されているモジュールを参照できます。
+この状態で`cdktf get`を実行すると`.gen`配下にディレクトリにモジュールのコードが生成されます。
+
+今回はmain.tsを以下のように修正して、VPCを作成したうえでそのVPCのサブネット上にEC2インスタンスを作ってみます。
+
+```typescript
+import { Construct } from "constructs";
+import { App, TerraformOutput, TerraformStack, Token, Fn } from "cdktf";
+import { AwsProvider } from "@cdktf/provider-aws/lib/provider";
+import { Instance } from "@cdktf/provider-aws/lib/instance";
+import { DataAwsSsmParameter } from "@cdktf/provider-aws/lib/data-aws-ssm-parameter";
+import { Vpc } from "./.gen/modules/vpc";
+
+class MyStack extends TerraformStack {
+  constructor(scope: Construct, id: string) {
+    super(scope, id);
+
+    new AwsProvider(this, "aws", {
+      region: "ap-northeast-1",
+      profile: "xxxxxxxxxxxxxx",
+    });
+
+    // create vpc from module
+    const vpc = new Vpc(this, "vpc", {
+      projectName: "advent_calendar",
+      env: "dev",
+      vpcCidrBlock: "10.0.0.0/16",
+      azSuffixes: ["a", "c", "d"],
+      createSsmEndpoint: true,
+    });
+
+    const amazonLinux2023Latest = new DataAwsSsmParameter(
+      this,
+      "AL2023latest",
+      {
+        name: "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-6.1-x86_64",
+      }
+    );
+    const public_subnets = Fn.lookup(
+      Token.asAnyMap(vpc.outputsOutput),
+      "public_subnets"
+    );
+    const ec2Instance = new Instance(this, "compute", {
+      ami: amazonLinux2023Latest.value,
+      instanceType: "t2.micro",
+      subnetId: Fn.element(public_subnets, Math.floor(Math.random() * 3)),
+    });
+
+    let outputs = new Map();
+    outputs.set("public_ip", ec2Instance.publicIp);
+    outputs.set("subnet", ec2Instance.availabilityZone);
+
+    new TerraformOutput(this, "outputs", {
+      value: outputs,
+    });
+  }
+}
+
+const app = new App();
+new MyStack(app, "aws_instance");
+
+app.synth();
+
+```
+
+この状態で`cdktf deploy`することで、VPCを作成しその上にEC2インスタンスが作成されます。
+
+![VPCとEC2の構築完了](/images/cdktf-for-usual-terraform-users/deployed_vpc_and_ec2.png)
+
+苦労したのはVPCモジュールからOutputを取り出す方法でした。
+該当のモジュールでは`outputs`という名前でMapでまとめてVPCの情報を出力していました。
+それはCDKTFでインポートした際には`vpc.outputsOutput`で取得できますが、これはそのままCDKTFのプログラミング言語でMapとして扱うことはできません。
+これは[Tokens](https://developer.hashicorp.com/terraform/cdktf/concepts/tokens)を使って言語の型に変換しなければなりません。
+前述の通りこのモジュールではMapでOuputsを出力しているので、TypeScriptのMapに変換します。
+Tokenは同ファイル内でimportしておきます。
+
+```typescript
+Token.asAnyMap(vpc.outputsOutput)
+```
+
+さらに、以下記事を参考にTerrafornの`lookup`関数を使ってMapから値を取り出しています。
+@[card](https://dev.classmethod.jp/articles/ckd_for_terraform_first_touch/)
+
+これは`Fn`というライブラリによって使用できます。
+[Functions](https://developer.hashicorp.com/terraform/cdktf/concepts/functions)
+
+最終的には以下のようにしてpublic_subnetsのリストからランダムにサブネットを選択しています。
+※やった後に思ったのですが、これをやると毎回planで差分が出てしまうはずなので微妙ですね…。
+
+該当箇所だけの抜き出しです。
+
+```typescript
+    const public_subnets = Fn.lookup(
+      Token.asAnyMap(vpc.outputsOutput),
+      "public_subnets"
+    );
+    const ec2Instance = new Instance(this, "compute", {
+      ami: amazonLinux2023Latest.value,
+      instanceType: "t2.micro",
+      subnetId: Fn.element(public_subnets, Math.floor(Math.random() * 3)),
+    });
+
+```
+
+これによりVPCモジュールで作成したVPCのサブネットIDをEC2インスタンスに渡すことができました。
 
 ## 感想
 
@@ -324,6 +444,10 @@ CDKTFを触ってみると、あまりTypeScriptに慣れていない自分で�
 まだまだ発展途上ですが、Terraformを介してCDKでいろんなサービスを操れるのはケースによってメリットがありそうです。
 デメリットはCDKそのものとTerraformと、対象のAPIとのそれぞれに学習コストが発生するので、やや学習コストが高くつくことでしょうか。
 まだまだ発展途上なプロダクトなので今後に期待したいですね。
+
+## 触ってみてわかったtips
+
+- 
 
 [^1]: [みすてむず いず みすきーしすてむず](https://misskey.systems/) とは、オープンソースのプラットフォームMisskeyのインスタンスのひとつで、主にITに関わる人が参加しています。最近はXよりもそちらに入り浸っています。
 [^2]: なお、CDK自体はおおむねTypeScriptで作られています。
