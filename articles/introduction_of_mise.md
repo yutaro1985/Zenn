@@ -185,7 +185,7 @@ run = "sl"
 これにより`mise run sl`または`mise sl`でSLが走ることを確認しました。
 
 なお、実行可能なTaskは`mise tasks`で確認できます。
-他にもタスクをグループ化する、ファイルを監視して変化した時にタスクを実行するなど高度な使い方もあるそうなので、詳細は[Running Tasks](https://mise.jdx.dev/tasks/running-tasks.html)を参照してください。
+他にもタスクをグループ化する、ファイルを監視して変化した時にタスクを実行するなど高度な使い方もあるそうですので、詳細は[Running Tasks](https://mise.jdx.dev/tasks/running-tasks.html)を参照してください。
 タスクは別ファイルに切り出すこともできるそうで、そのへんの使い方は[File Tasks](https://mise.jdx.dev/tasks/file-tasks.html)に詳しく書いてあります。
 
 個人的にもあまりまだ使えてないので今後活用したいなと思っています。
