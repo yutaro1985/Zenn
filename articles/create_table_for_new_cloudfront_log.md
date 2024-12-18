@@ -20,15 +20,15 @@ published: true
 というかそれで知りました
 [CloudFront 標準ログがアップデート！新機能のパーティションやJSON出力を試してみた](https://dev.classmethod.jp/articles/cloudfront-access-log-update-202411/)
 
-これにより、様々な出力形式が設定できるようになりました。
-今まではCloudFrontのログはS3の指定パスにパスも切られずにズラッと出力するのみだったのでだいぶ扱いやすくなったのではないでしょうか。
+これにより、さまざまな出力形式が設定できるようになりました。
+今まではCloudFrontのログはS3の指定パス上に、パスも切られずにズラッと出力するのみだったのでだいぶ扱いやすくなったのではないでしょうか。
 CloudWatch Logs、Kinesis Firehoseにも送れるようになったので、取り扱いやすくもなりました。
 
-本記事執筆時点ではまだAWSの日本語ドキュメントには記載がないため、一旦英語のドキュメントをご参照ください。
+本記事の執筆時点ではまだAWSの日本語ドキュメントには記載がないため、いったん英語のドキュメントをご参照ください。
 [Configure standard logging (v2)](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/standard-logging.html)
 
-実際にこのアップデートを元にS3で早速json形式でログを出力してみました。
-jsonで出力できるのでAthenaでクエリを送るのも簡単になっただろうと思ったのですが、思ってないところに落とし穴があったので今回はそのお話をします。
+実際にこのアップデートを元にS3でさっそくjson形式でログを出力してみました。
+jsonで出力できるのでAthenaでクエリを送るのも簡単になっただろうと思ったのですが、思わぬところに落とし穴があったので今回はそのお話をします。
 
 ## CloudFrontのログ出力設定
 
@@ -115,7 +115,7 @@ TBLPROPERTIES ( 'skip.header.line.count'='2' )
 - `origin-lbl`
 - `asn`
 
-origin-fbl、origin-lblはオリジンからCloudFrontへの最初のバイトと最後のバイトのレイテンシーで、小数が入ります。
+origin-fbl、origin-lblはオリジンからCloudFrontへの最初のバイトと最後のバイトのレイテンシで、小数が入ります。
 
 新形式にない項目を追加し、形式がjsonになったことを踏まえてクエリを編集すると以下のようになります。
 ※Partition Projectionの設定はいったん省略します。
@@ -232,7 +232,7 @@ TBLPROPERTIES (
    - `origin-lbl`
 これらの項目をINT、BIGINT、FLOATにすると、数値が入らず文字列の「-」になっている時にクエリがエラーになります。
 それを防ぐため、**これらの項目はSTRINGで定義してください**。
-※もしかしたらこれ以外にもあるかもしれないので、仮にそのような項目があったらコメントで教えて下さい。
+※もしかしたらこれ以外にもあるかもしれないので、仮にそのような項目があったらコメントで教えてください。
 
 ### テーブル作成クエリの修正
 
