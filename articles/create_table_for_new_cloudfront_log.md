@@ -8,7 +8,7 @@ published: true
 
 :::message
 この記事は
-[みすてむず いず みすきーしすてむず その2 Advent Calendar 2024](https://adventar.org/calendars/8615)[^1]  
+[みすてむず いず みすきーしすてむず その2 Advent Calendar 2024](https://adventar.org/calendars/10269)[^1]  
 及び
 [AWS（Amazon Web Services） Advent Calendar 2024](https://qiita.com/advent-calendar/2024/aws)
 の18日目です。

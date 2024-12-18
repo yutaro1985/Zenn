@@ -8,7 +8,7 @@ published: true
 
 :::message
 この記事は
-[みすてむず いず みすきーしすてむず その2 Advent Calendar 2024](https://adventar.org/calendars/8615)[^1]の12日目です。
+[みすてむず いず みすきーしすてむず その2 Advent Calendar 2024](https://adventar.org/calendars/10269)[^1]の12日目です。
 :::
 
 表題のとおり、miseというツールがあります。
