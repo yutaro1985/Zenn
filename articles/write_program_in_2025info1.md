@@ -3,7 +3,7 @@ title: "2025年の共通テスト情報1のプログラムを制約を厳しく�
 emoji: "🔥"
 type: "tech" # tech: 技術記事 / idea: アイデア
 topics: ["共通テスト","プログラム","情報1"]
-published: false
+published: true
 ---
 
 **※2025年の共通テスト情報1の問題、特に第3問について詳細に記述しているため、自分で解いてみる前に情報を入れたくないという方は一旦読むのをやめてください。**
@@ -69,9 +69,9 @@ func main() {
 				tantou = buin
 			}
 		}
-        // 工芸品をどの部員が何日目から何日目まで制作するかを標準出力する
+                // 工芸品をどの部員が何日目から何日目まで制作するかを標準出力する
 		fmt.Println("工芸品" + strconv.Itoa(kougeihin+1) + " … " + "部員" + strconv.Itoa(tantou+1) + " : " + strconv.Itoa(Akibi[tantou]) + "日目〜" + strconv.Itoa(Akibi[tantou]+Nissu[kougeihin]-1) + "日目")
-        // 工芸品を担当する部員の空き日に担当する工芸品の日数を加算する
+                // 工芸品を担当する部員の空き日に担当する工芸品の日数を加算する
 		Akibi[tantou] = Akibi[tantou] + Nissu[kougeihin]
 	}
 }
