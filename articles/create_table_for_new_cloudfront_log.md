@@ -1,5 +1,5 @@
 ---
-title: "CloudFrontの新しいログ形式に対応したAthenaのテーブルを作ってみた"
+title: "CloudFrontの新しいログ形式(v2)に対応したAthenaのテーブルを作ってみた"
 emoji: "🎉"
 type: "tech" # tech: 技術記事 / idea: アイデア
 topics: ["aws","cloudfront","athena"]
