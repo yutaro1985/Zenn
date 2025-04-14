@@ -24,8 +24,12 @@ published: true
 今まではCloudFrontのログはS3の指定パス上に、パスも切られずにズラッと出力するのみだったのでだいぶ扱いやすくなったのではないでしょうか。
 CloudWatch Logs、Kinesis Firehoseにも送れるようになったので、取り扱いやすくもなりました。
 
-本記事の執筆時点ではまだAWSの日本語ドキュメントには記載がないため、いったん英語のドキュメントをご参照ください。
-[Configure standard logging (v2)](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/standard-logging.html)
+~~本記事の執筆時点ではまだAWSの日本語ドキュメントには記載がないため、いったん英語のドキュメントをご参照ください。~~  
+[Configure standard logging (v2)](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/standard-logging.html)  
+※2025/04/14追記  
+日本語版ドキュメントにも記載されました。  
+この記事に限らず、日本語版のドキュメントは最新でないことがあるので最新情報は英語版を確認するようにしましょう。  
+[標準ログ記録 (v2) を設定する](https://docs.aws.amazon.com/ja_jp/AmazonCloudFront/latest/DeveloperGuide/standard-logging.html)
 
 実際にこのアップデートを元にS3でさっそくjson形式でログを出力してみました。
 jsonで出力できるのでAthenaでクエリを送るのも簡単になっただろうと思ったのですが、思わぬところに落とし穴があったので今回はそのお話をします。
