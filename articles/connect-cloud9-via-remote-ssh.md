@@ -10,7 +10,7 @@ published: true
 この記事は
 [みすてむず いず みすきーしすてむず (3) Advent Calendar 2023](https://adventar.org/calendars/8615)[^1]
 および
-[AWS（Amazon Web Services） Advent Calendar 2023 シリーズ2](https://qiita.com/advent-calendar/2020/aws2)
+[AWS（Amazon Web Services） Advent Calendar 2023 シリーズ2](https://qiita.com/advent-calendar/2023/aws)
 の15日目です。
 :::
 
