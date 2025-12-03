@@ -73,61 +73,84 @@ AWSをお使いの皆様はこの時期はAWSのアップデート情報を追�
 API Gatewayにレスポンスを返させるLambdaを先に作成します。
 先述の通り、執筆時点ではNodeだけがLambdaのResponse Streamingのみに対応しています。
 
-#### Node.js（ネイティブ）最小例
+#### Node.js（ネイティブ）— S3中継の最小例
 
-Node.js ランタイムでは Lambda がResponse Streamingをネイティブにサポートします。最小例（擬似的に大きなデータをチャンク出力）:
+Node.js ランタイムでは Lambda がResponse Streamingをネイティブにサポートします。公開S3のオブジェクトを`https.get`で取得し、そのままストリーム転送します。
 
 ```js
-export const handler = async (event, context) => {
-  const { ResponseStream } = await import("aws-lambda");
-  const stream = new ResponseStream(event, context, {
+import https from 'node:https';
+import { pipeline } from 'node:stream/promises';
+
+// グローバルの awslambda ヘルパを使用
+export const handler = awslambda.streamifyResponse(async (event, responseStream, context) => {
+  const httpResp = awslambda.HttpResponseStream.from(responseStream, {
     statusCode: 200,
-    headers: { "Content-Type": "application/octet-stream" },
+    headers: {
+      'Content-Type': 'application/octet-stream',
+      // 任意: ダウンロード時のファイル名を指定
+      'Content-Disposition': 'attachment; filename="file.bin"'
+    }
   });
 
-  const chunk = Buffer.alloc(1024 * 1024, "x");
-  for (let i = 0; i < 50; i++) {
-    stream.write(chunk);
-  }
-  stream.end();
-};
+  const url = 'https://<bucket>.s3.<region>.amazonaws.com/path/to/object';
+
+  await new Promise((resolve, reject) => {
+    https.get(url, (res) => {
+      if (res.statusCode !== 200) {
+        // 上流エラーを簡易的に通知
+        httpResp.write(Buffer.from(`Upstream error: ${res.statusCode}\n`));
+        httpResp.end();
+        reject(new Error(`S3 GET failed: ${res.statusCode}`));
+        return;
+      }
+      pipeline(res, httpResp).then(resolve).catch(reject);
+    }).on('error', reject);
+  });
+});
 ```
 
-REST API の統合タイプは Lambda プロキシ、リソース/メソッドにハンドラを紐づければダウンロードできます。
+REST API は Lambda プロキシ統合で、該当リソース/メソッドに上記ハンドラを紐づけます。
 
-#### Python（Web Adapter）最小例
+#### Python（Web Adapter）— S3中継の最小例
 
-Pythonランタイムでは、Web Adapterを使ってFlaskやFastAPIのようなHTTPフレームワークをLambdaに載せることで、ストリーミングレスポンスを扱えます。
+Pythonでは AWS Lambda Web Adapter を使ってFlask/FastAPI等のストリーミングを有効化し、公開S3から取得したバイナリをそのまま転送します。
 
 コード例（`app.py`）:
 
 ```python
+import requests
 from flask import Flask, Response
 
 app = Flask(__name__)
 
+S3_URL = "https://<bucket>.s3.<region>.amazonaws.com/path/to/object"
+CHUNK_SIZE = 1024 * 1024
 
-def generate_chunks(total_mb: int = 50, chunk_size: int = 1024 * 1024):
-    sent = 0
-    while sent < total_mb * 1024 * 1024:
-        yield b"x" * chunk_size
-        sent += chunk_size
-
+def stream_s3():
+  with requests.get(S3_URL, stream=True) as r:
+    r.raise_for_status()
+    for chunk in r.iter_content(chunk_size=CHUNK_SIZE):
+      if chunk:
+        yield chunk
 
 @app.route("/download")
 def download():
-    return Response(generate_chunks(), mimetype="application/octet-stream")
-
+  return Response(stream_s3(), mimetype="application/octet-stream")
 ```
 
-Web Adapter の利用（デプロイ時にバイナリを同梱し、ハンドラを `bootstrap` 経由にするなど）が必要です。公式リポジトリの手順に沿って設定してください。
+Web Adapter の利用（Layerをアタッチして実行ラッパを有効化）が必要です。公式リポジトリの手順に沿って設定してください。
 
 ##### Web Adapter 導入ポイント（Python）
 
-- バイナリ配置: リリースからWeb Adapterバイナリを取得し、アプリコードと同梱
-- 環境変数: `AWS_LAMBDA_EXEC_WRAPPER` をWeb Adapter実行に設定、必要に応じて`RUST_LOG`等でログ詳細化
-- エントリポイント: `bootstrap`（Custom Runtime）または既存ランタイムに合わせた起動設定を適用
-- フレームワーク: Flask/FastAPI等の`Response`で`generator`/`StreamingResponse`を利用
+- Layer: 公式のLambda Adapter Layerを関数にアタッチ（リージョン/アーキ別の最新ARNはREADME参照）
+- 環境変数（必須）:
+  - `AWS_LAMBDA_EXEC_WRAPPER=/opt/bootstrap`
+  - `AWS_LWA_INVOKE_MODE=response_stream`
+  - `PORT=8080`（または`AWS_LWA_PORT`）
+- 環境変数（任意）:
+  - `AWS_LWA_ENABLE_COMPRESSION=true`（圧縮を有効化）
+  - `RUST_LOG=info`（デバッグ用）
+- フレームワーク: Flaskのジェネレータ/ FastAPIの`StreamingResponse`でストリーム返却
 - テスト: `curl -v`で`Transfer-Encoding: chunked`や受信進行を確認、CloudWatch Logsで例外/タイムアウトを監視
 
 デプロイ方法（bash、zipパッケージ想定）:
@@ -136,12 +159,12 @@ Web Adapter の利用（デプロイ時にバイナリを同梱し、ハンド�
 # 依存取得（Flask）
 python3 -m venv .venv
 source .venv/bin/activate
-pip install flask
+pip install flask requests
 
 # パッケージング
 mkdir -p dist
 cp app.py dist/
-# Web Adapter バイナリや設定も dist に配置（公式手順に従う）
+# Web Adapter Layerをアタッチする前提。必要ならバイナリ/設定も dist に配置（公式手順に従う）
 zip -r dist.zip dist
 
 # Lambda へアップロード（AWS CLI）
@@ -166,6 +189,7 @@ wc -c big.bin
 - ランタイム対応差: Node.jsはネイティブ、Python等はWeb Adapterの導入が必要
 - タイムアウト: Lambda実行時間上限内で送出完了が必要（長時間配信は注意）
 - ネットワーク途中経路: 一部のプロキシ/CDN/クライアントがチャンク転送に制約を持つことあり
+- VPC接続: 関数をVPCに接続するとデフォルトでインターネットへ出られないため、公開S3へ到達するにはNAT構成、またはS3向けVPCエンドポイントの利用が必要
 - ヘッダ/圧縮: 事前に `Content-Length` を確定しづらい。圧縮や`Content-Encoding`の扱いは検証必須
 - キャッシュ戦略: ストリーミングとキャッシュ制御の組み合わせは要検討（CloudFront経由の場合など）
 - エラーハンドリング: 途中失敗時の再開や整合性（部分取得）をどう扱うか
@@ -179,9 +203,10 @@ wc -c big.bin
 2. リソース追加: 例として`/download`リソースを作成
    - ![alt text](/images/test-api-gateway-streaming-response/add_path_to_api_gateway.png) 
 3. メソッド追加: `GET`メソッドを作成し、統合タイプを`Lambda プロキシ`に設定、対象のLambda関数を指定
-4. 統合レスポンス: 必要に応じてヘッダ（`Content-Type`等）をパススルー、チャンク転送を阻害する設定がないことを確認
-5. デプロイ: 新規または既存ステージへデプロイして、Invoke URLを取得
-6. 動作確認: `curl -v`などでヘッダと受信状況を確認（後述の確認例）
+4. 統合リクエスト: 「Response transfer mode」を`Stream`に設定（コンソールのIntegration設定画面）
+5. 統合レスポンス: 必要に応じてヘッダ（`Content-Type`等）をパススルー、チャンク転送を阻害する設定がないことを確認
+6. デプロイ: 新規または既存ステージへデプロイして、Invoke URLを取得
+7. 動作確認: `curl -v`などでヘッダと受信状況を確認（後述の確認例）
 
 ## 検証結果（暫定）
 
@@ -197,76 +222,6 @@ wc -c big.bin
 
 - AWS Lambda Web Adapter: <https://github.com/awslabs/aws-lambda-web-adapter>
 - Lambda Response Streaming の解説（英語、公式ブログやドキュメントを参照）
-
-## 公開S3バケットからのストリーミング（実装例）
-
-前提: すでに公開設定済みのS3バケットに検証用バイナリを配置してあり、HTTPSで直接GET可能（例: `https://<bucket>.s3.<region>.amazonaws.com/path/to/object`）。LambdaはこのURLからチャンク読み出しし、API Gateway（REST API）へStreaming Responseで転送します。
-
-### Python（Web Adapter）
-
-```python
-import requests
-from flask import Flask, Response
-
-app = Flask(__name__)
-
-S3_URL = "https://<bucket>.s3.<region>.amazonaws.com/path/to/object"
-CHUNK_SIZE = 1024 * 1024
-
-def stream_s3():
-    with requests.get(S3_URL, stream=True) as r:
-        r.raise_for_status()
-        for chunk in r.iter_content(chunk_size=CHUNK_SIZE):
-            if chunk:
-                yield chunk
-
-@app.route("/download")
-def download():
-    return Response(stream_s3(), mimetype="application/octet-stream")
-```
-
-ポイント:
-
-- `requests.get(..., stream=True)`でサーバ側からチャンク受信→そのまま出力
-- 公開バケットなので署名不要。認証が必要な場合は事前に署名URLを生成する等の対策
-
-### Node.js（ネイティブ）
-
-```js
-import https from 'node:https';
-
-export const handler = async (event, context) => {
-  const { ResponseStream } = await import('aws-lambda');
-  const stream = new ResponseStream(event, context, {
-    statusCode: 200,
-    headers: { 'Content-Type': 'application/octet-stream' }
-  });
-
-  const url = 'https://<bucket>.s3.<region>.amazonaws.com/path/to/object';
-  await new Promise((resolve, reject) => {
-    https.get(url, (res) => {
-      if (res.statusCode !== 200) {
-        reject(new Error(`S3 GET failed: ${res.statusCode}`));
-        return;
-      }
-      res.on('data', (chunk) => stream.write(chunk));
-      res.on('end', () => { stream.end(); resolve(); });
-      res.on('error', reject);
-    }).on('error', reject);
-  });
-};
-```
-
-確認コマンド例（bash）:
-
-```bash
-curl -L -o s3.bin "https://<api-id>.execute-api.<region>.amazonaws.com/download"
-wc -c s3.bin
-```
-
-注意:
-- 公開S3に依存するため、オブジェクトのサイズ/範囲取得やヘッダの扱いはS3の挙動に準拠
-- 事前に`Content-Type`や`Content-Disposition`を付けたい場合は、Lambda側でヘッダ付与・必要なら事前取得（HEAD）も検討
 
 ## 余談
 
