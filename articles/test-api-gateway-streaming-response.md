@@ -21,8 +21,8 @@ AWSをお使いの皆様はこの時期はAWSのアップデート情報を追�
 もしくはre:Inventの現地で発表とセッションを追うのに忙しい方もいらっしゃるかもしれません。  
 自分は現地参加は無理なので公式ブログと現地参加の皆さんの情報を頼りにアップデート情報を追っています。
 
-さて、re:Inventの時期にはAWSのアップデートが大量にリリースされるのが恒例 [^2]ですが、今回は11月にアップデートのあったAPI GatewayのResponse Streaming
-[に注目します。B@ucardhttps://aws.amazon.com/jp/blogs/compute/building-responsive-apis-with-amazon-api-gateway-response-streaming/)
+さて、re:Inventの時期にはAWSのアップデートが大量にリリースされるのが恒例 [^2]ですが、今回は11月にアップデートのあったAPI GatewayのResponse Streamingに注目します。
+@[card](https://aws.amazon.com/jp/blogs/compute/building-responsive-apis-with-amazon-api-gateway-response-streaming/)
 
 これによりレスポンスの制限を一部乗り越えられるのではないかと思ったのが動機です。
 既に触れられているユースケースでよくあるのは、[Bedrock](https://docs.aws.amazon.com/ja_jp/bedrock/latest/userguide/what-is-bedrock.html)[^3]のレスポンスをLambdaがそのままストリームでAPI Gatewayから返す、というものです。
