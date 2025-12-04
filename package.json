@@ -4,7 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "preview": "zenn preview",
+    "lint": "textlint -f stylish \"articles/**/*.md\"",
+    "lint:fix": "textlint --fix \"articles/**/*.md\""
   },
   "repository": {
     "type": "git",
