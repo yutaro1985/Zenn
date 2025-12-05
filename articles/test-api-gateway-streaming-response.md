@@ -33,18 +33,61 @@ AWSをお使いの皆様はこの時期はAWSのアップデート情報を追�
 
 ## 前提
 
+まず、なぜこのような検証をしようと思ったかというと、API Gatewayを使ったサーバレスアーキテクチャにおいて、API Gatewayを介したファイルダウンロードを行わせたいケースがあったからです。
+
 最初に軽く触れましたが、API Gatewayのレスポンスには制限が存在しました。
 ペイロードサイズが10MB(**上限緩和不可**)だったり、タイムアウトが最大29秒（HTTP APIだと30秒っぽい）だったり…。
 ※参考
 @[card](https://docs.aws.amazon.com/ja_jp/apigateway/latest/developerguide/api-gateway-execution-service-limits-table.html)
 
-- ランタイム: Lambda（PythonまたはNode.js）
-- API種別: API Gateway REST API を想定（Response Streaming 対応は執筆時点ではREST APIのみ）
-- 目的: 「大きなコンテンツをストリーミングでクライアントへ返せるか」を実験し、実務適用時の注意点を整理する
+これまでは、このようなケースでは一旦S3バケットにファイルを配置し、S3のPreSigned URLを発行してそこからダウンロードさせるなどがよくある手法でした。
+※S3のPreSigned URLについては以下
+[署名付き URL を使用したオブジェクトの共有](https://docs.aws.amazon.com/ja_jp/AmazonS3/latest/userguide/ShareObjectPreSignedURL.html)
+[API Gateway + Lambda で S3 署名付き URL (ダウンロード用) を発行する構成を AWS CDK で実装する](https://dev.classmethod.jp/articles/api-gateway-lambda-s3-presigned-url-cdk/)
+ざっくりいうと一時URLを期限付きで発行してそこからダウンロードさせるという形です。
+
+動画や重い画像などをやりとりさせるなら、API Gateway経由よりもS3から直接ダウンロードしたほうがやや料金効率も良いですし、Lambdaを経由させるとLamdbaの実行時間分課金が入るのでその分も省けます。
+ただし、たとえば以下のようなケースではAPI Gatewayから直接返したいということが想定されます。
+
+- Presigned URLをむやみに発行したくない
+  - バケットポリシーでIP制限などかけることはできるものの、基本的には発行したURLが漏れたらURLが期限切れになるまでは誰でも使えてしまう
+  - APIの仕様としてファイルを直接返させるようにしたい
+    - クライアント側で発行したURLに即時アクセスさせる挙動を保証させられるなら良いですが、APIだけ実装して使い方はクライアント任せ、みたいな感じだとそうもいかないことがあります
+  - 一時的にでも、ユーザーに渡すファイルをS3に配置したくない
+    - S3バケットにもともとあるものでなければファイルの原本がどこかにあるはずで、そうなるとファイルのコピーがS3に置かれることになり、それを嫌がるというケースは考えられます
+      - もちろん、S3バケットのライフサイクルポリシーを使って短い時間でバケットから削除するという方法も考えられるのでそこは作る人や組織のポリシーや考え方次第です
+
+また、たとえばPDFなどをダウンロードさせたい場合、10MBという制限が微妙で、これに抵触するかどうかを考えなければいけなくなったりします。
+そこで、API GatewayのResponse Streamingを使って、この10MBの制限を超えてファイルを返せるかどうかを試してみよう、というのが今回の記事を書こうと思った発端です。
+
+今回は以下のような構成を想定します。
+
+- ランタイム
+  - Lambda
+    - PythonとNode.js
+- API種別
+  - API Gateway REST APIを想定
+    - Response Streaming対応は執筆時点ではREST APIのみ
+- 取得ファイル
+  - S3上に配置したファイル
+    - S3のAPI経由ではなく、公開したS3から直接ダウンロード
+- 目的
+  - API Gatewayのレスポンスとしてそのまま10MBを超えるファイルを返せかどうかを確認する。
 
 注意点として、Lambdaのレスポンスストリーミングはランタイムによって対応状況が異なります。Node.jsはランタイムネイティブでの対応が案内されています。一方、他言語では AWS Lambda Web Adapter（`awslabs/aws-lambda-web-adapter`）を組み合わせることでHTTPフレームワークのストリーミングをLambdaに橋渡しできます。
 本記事ではPython で Web Adapterを使用した手法も触れます。(自分がPythonでLambdaを実装する要件があり検証したいため。)
 @[card](https://github.com/awslabs/aws-lambda-web-adapter)
+
+※API GatewayやらLambdaやらってなんぞや、という方は以下などをご参照ください。
+
+- API Gateway
+  - [Amazon API Gateway とは何ですか?](https://docs.aws.amazon.com/ja_jp/apigateway/latest/developerguide/welcome.html)
+  - APIをサクッと構築できるサービス。構築したAPIを別のところに流したり、AWSのサービスに流して処理させたりできる。
+- Lambda
+  - [AWS Lambda とは](https://docs.aws.amazon.com/ja_jp/lambda/latest/dg/welcome.html)
+  - ざっくり言うと、サーバを意識せずにプログラムを実行できるサービス。今回のような構成ではAPI Gatewayが受けたリクエストをLambdaに送って、そのLambdaが処理を行う。
+- サーバレスアーキテクチャ
+  - [Amazon API Gateway と AWS Lambda を使用した AWS Serverless マルチ階層アーキテクチャ](https://docs.aws.amazon.com/ja_jp/whitepapers/latest/serverless-multi-tier-architectures-api-gateway-lambda/welcome.html)
 
 ## 検証構成（概略）
 
