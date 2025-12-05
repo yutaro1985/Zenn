@@ -66,8 +66,8 @@ AWSをお使いの皆様はこの時期はAWSのアップデート情報を追�
   - Lambda
     - PythonとNode.js
 - API種別
-  - API Gateway REST API を想定
-    - Response Streaming 対応は執筆時点ではREST APIのみ
+  - API Gateway REST APIを想定
+    - Response Streaming対応は執筆時点ではREST APIのみ
 - 取得ファイル
   - S3上に配置したファイル
     - S3のAPI経由ではなく、公開したS3から直接ダウンロード
