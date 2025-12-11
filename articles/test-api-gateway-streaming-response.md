@@ -89,6 +89,16 @@ AWSをお使いの皆様はこの時期はAWSのアップデート情報を追�
 - サーバレスアーキテクチャ
   - [Amazon API Gateway と AWS Lambda を使用した AWS Serverless マルチ階層アーキテクチャ](https://docs.aws.amazon.com/ja_jp/whitepapers/latest/serverless-multi-tier-architectures-api-gateway-lambda/welcome.html)
 
+※追記
+実はAPI GatewayのLambda関数プロキシ統合ではなく、Lambda Function URLを発行してそれをAPI GatewayのHTTP Proxy統合でエンドポイントURLに設定することで、ペイロードサイズ上限を回避する方法が既に記事化されています。
+@[card](https://dev.classmethod.jp/articles/aws-lambda-response-streaming-api-gateway/)
+
+ただし、この方法ではLambda Function URLに対するアクセス制限をどうするかが課題になってきます。
+未検証ですが、HTTP Proxy統合のリクエストではおそらくLambda Function URLのIAM認証のリクエスト要件を満たせない(SigV4 署名付きリクエストが必要)ので、実質リソースベースポリシーによる制御が必要になるかと思います。
+API GatewayのARNを設定すればもしかしたらAPI Gatewayからのみ呼び出せるようにできるかもしれませんが、ちょっとそこまでは未検証です…。
+また、何も設定しないとパブリックにアクセス可能なURLとなってしまうため注意が必要です。
+また、イベントの受け取り方が変わるため、Lambdaの実装もLambdaプロキシ統合のLambdaとは異なってくるはずです。
+
 ## 検証構成（概略）
 
 - クライアント（ブラウザや `curl`）
