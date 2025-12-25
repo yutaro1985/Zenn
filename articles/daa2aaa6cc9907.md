@@ -105,7 +105,7 @@ IAMユーザーでも強い権限を与えることは可能ですが、アカ�
 
 ### 個々の IAM ユーザーを作成する
 
-### ユーザーのために強度の高いパスワードポリシーを設定する。
+### ユーザーのために強度の高いパスワードポリシーを設定する
 
 [個々の IAM ユーザーを作成する](https://docs.aws.amazon.com/ja_jp/IAM/latest/UserGuide/best-practices.html#create-iam-users)
 [ユーザーのために強度の高いパスワードポリシーを設定する。](https://docs.aws.amazon.com/ja_jp/IAM/latest/UserGuide/best-practices.html#configure-strong-password-policy)
