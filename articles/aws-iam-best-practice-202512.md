@@ -3,7 +3,7 @@ title: "Re:AWSを使うにあたりIAMのベストプラクティスをもう一
 emoji: "🔑"
 type: "tech" # tech: 技術記事 / idea: アイデア
 topics: ["aws","iam","security"]
-published: false
+published: true
 ---
 :::message
 
