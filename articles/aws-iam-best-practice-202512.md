@@ -8,7 +8,7 @@ published: true
 :::message
 
 - この記事は[AWS（Amazon Web Services） Advent Calendar 2025](https://qiita.com/advent-calendar/2025/aws)の25日目です。
-- この記事はAIの力を借りて作成しています。ただし、一部内容の作成、内容の確認や修正、壁打ちなどは筆者が主体となって実施しています。
+- この記事はAIの力を借りて作成しています。ただし、内容の確認や修正、壁打ち、補足説明などは筆者が主体となって実施しています。
 
 :::
 
@@ -136,8 +136,8 @@ AWS内のリソースからAWS内の別リソースにアクセスする場合�
 - 他のクラウドやオンプレミス環境にアプリケーションがあるが、AWSのサービスを一部だけ使う
 
 前者については、IAMのIDプロバイダを作成してAssumeRoleWithWebIdentityを使うことで実現できます。
-実際にそれが可能になった段階で試した記事を自分も書いています(この記事では公式に対応してない頃に無理やり使ってみたという内容で、)。
-[GitHub Actionsのトークンを使ってAWS公式のconfigure-aws-credentialsを使ってみた](./b012f69b49bec095b9f1.md)
+実際にそれが可能になった段階で試した記事を自分も書いています(この記事では公式Actionであるconfigure-aws-credentialsがAssumeRoleWithWebIdentity対応してない頃に無理やり使ってみたという内容で、対応済みなのでもう少し楽にできるようになっています。)
+[GitHub Actionsのトークンを使ってAWS公式のconfigure-aws-credentialsを使ってみた](https://zenn.dev/yutaro1985/articles/b012f69b49bec095b9f1)
 後者については、2022年にリリースされたIAM Roles Anywhereを使うことで実現できます。
 自分はあまり触ったことがないのですが以下などが参考になります。
 @[card](https://aws.amazon.com/jp/blogs/news/extend-aws-iam-roles-to-workloads-outside-of-aws-with-iam-roles-anywhere/)
