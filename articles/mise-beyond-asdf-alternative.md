@@ -1,0 +1,381 @@
+---
+title: "miseはもうasdf alternativeだけではない、開発環境の仕様として捉え直す"
+emoji: "🔪"
+type: "tech" # tech: 技術記事 / idea: アイデア
+topics: ["mise","asdf","環境構築"]
+published: false
+---
+
+## 最初に
+
+以前、miseの紹介記事を書きました。[^1]
+
+@[card](https://zenn.dev/yutaro1985/articles/introduction_of_mise)
+
+当時の自分は、miseを「asdf alternativeであり、envとtasksも持つツール」と説明していました。
+その整理自体は今も間違っていません。
+
+ただ、2026年時点のドキュメントやREADMEを読むと、いまのmiseはもう少し違う見え方をするようになりました。
+単なる寄せ集めではなく、開発環境の準備そのものを定義する道具として育ってきました。
+
+この記事は、その更新版です。
+2023年ごろにasdf alternativeとしてmiseを触った人向けに、いまの理解の軸を整理します。
+
+ツールのバージョン管理や、基本的なenv、tasksの使い方は前回記事で触れています。
+今回はその先にある話へ進みます。
+
+## mise の思想は「下ごしらえ」をそろえること
+
+`mise-en-place` は、料理でいう「下ごしらえ」を指す言葉です。
+READMEでも `The front-end to your dev env` と表現されています。
+
+この名前を前提にすると、miseの機能がかなり自然に見えてきます。
+やっていることは、開発に入る前の準備をそろえることです。
+
+- どのツールで動かすか
+- どんな状態で動かすか
+- どの操作を入口にするか
+
+この3つをバラバラに置かず、1つの設定にまとめる。
+それがいまのmiseの中心だととらえると、だいぶ整理しやすくなります。
+
+## いまの mise を理解するためのフレーム
+
+この記事では、miseを次の対応でとらえます。
+
+| 要素 | 役割 |
+| --- | --- |
+| `tools` | 実行環境 |
+| `env` | 状態 |
+| `tasks` | 操作 |
+
+この見方をすると、`mise.toml` は単なるバージョン管理ファイルではありません。
+プロジェクトを動かす前提条件を書く「仕様書」のような存在になります。
+
+`tools` だけを見るとasdf alternativeです。
+`env` まで含めるとdirenv的な役割も入ります。
+`tasks` まで含めると、開発者が触る入口まで定義できます。
+
+ここは、前回記事を書いたころより変化を感じるところでした。
+
+## tools は「実行環境」を定義する層になった
+
+### asdf 互換は残っている
+
+まず大前提として、miseは今もasdf alternativeです。
+`.tool-versions` 互換もありますし、asdfプラグイン資産も使えます。
+
+ですので、既存のasdf運用から入る入口は今も残っています。
+ただし、新規に整理するなら `mise.toml` を中心にしたほうが分かりやすいです。
+
+理由は単純で、tools以外も同じ場所に置けるからです。
+いまのmiseを活かすなら、設定を分けるより集約したほうが扱いやすいです。
+
+### backend が広がり、「どこから入れるか」まで書ける
+
+最近のmiseで印象的なのは、ツールの取得元をbackendとして扱えることです。
+言語ランタイムだけでなく、各エコシステムの配布物もそのまま扱えます。
+
+次の例は、その感覚が分かりやすいです。
+
+```toml
+[tools]
+node = "22"
+pnpm = "10"
+"npm:prettier" = "3"
+"cargo:watchexec-cli" = "2"
+```
+
+ここで書いているのは、単なる「バージョン」ではありません。
+Node.jsは通常のruntimeとして入れつつ、Prettierはnpmから、watchexecはcargoから入れると宣言しています。
+
+つまり `tools` は「必要な実行物の一覧」に近い層です。
+runtime managerというより、実行環境の部品表です。
+
+### shim は非対話環境とのつなぎ役
+
+以前の説明では、shellにactivateしてPATHを切り替える話が中心でした。
+それは今も主流です。
+
+ただ、いまのドキュメントではshimの位置付けもだいぶ明確です。
+対話シェルでは `mise activate` が基本です。
+一方で、IDEやスクリプト、CIのような非対話環境ではshimが効きます。
+
+この違いは `env` を考えると特に重要です。
+shimは便利ですが、envの反映対象が「mise経由で動くもの」に寄りやすいです。
+shell全体の状態としてenvを扱いたいなら、`mise activate` か `mise run` を使うほうが自然です。
+
+### lock は「たまたま今入ったもの」を減らす
+
+`mise install` だけでも便利ですが、チーム運用では再現性をもう一段上げたくなります。
+そのときに役立つのが `mise lock` です。
+
+```bash
+mise install
+mise lock
+git add mise.lock
+```
+
+`mise.lock` には、対象platformのダウンロードURLやchecksumが入ります。
+これにより、「Node 22系を入れる」は同じでも、どの配布物を取るかまで固定しやすくなります。
+
+言語ごとのlockfileとは少し役割が違います。
+ここで固定しているのは、アプリケーションの依存関係ではなく、開発環境を構成する配布物です。
+
+## env は「dotenv の置き換え」より広い
+
+### env は state を書く場所と考えると分かりやすい
+
+`env` を初見で見ると、`.env` を `mise.toml` へ移すための機能に見えます。
+その理解でも一部は合っています。
+
+ただ、いまの `env` はそこでは止まりません。
+静的なkey/valueだけでなく、状態を組み立てるしくみが入っています。
+
+たとえば次のように書けます。
+
+```toml
+[env]
+APP_ENV = "development"
+AWS_REGION = "ap-northeast-1"
+_.file = ".env.shared"
+_.path = ["{{config_root}}/node_modules/.bin"]
+```
+
+この例でやっていることは3つです。
+アプリケーションの状態を決める値を置くこと。
+共有する `.env` 系ファイルを読むこと。
+プロジェクト配下の実行パスを足すことです。
+
+dotenvは「ファイルを読む」が主役です。
+miseの `env` は「状態を定義し、必要なら外部から組み立てる」が主役です。
+
+### `env._` は構成的な読み込み口
+
+`env._` を見ると、だいぶ思想が分かります。
+`_` は通常の変数名ではなく、envを組み立てるためのdirectiveです。
+
+代表例は `_.file`、`_.path`、`_.source` です。
+
+- `_.file`: dotenv / JSON / YAMLなどのファイルを読む
+- `_.path`: PATHに追加する
+- `_.source`: bash scriptをsourceしてexport済みの値を読む
+
+この設計のよいところは、envを「値の一覧」ではなく「作り方の宣言」として書ける点です。
+特に `_.source` があると、外部コマンドから得た値もprojectの状態に組み込めます。
+
+### 動的評価は env の重要な進化点
+
+最近のenvは、静的な設定を置くだけではありません。
+外部スクリプトやplugin提供の `env._.<name>` directiveで、動的に値を作れます。
+
+たとえばsecret managerから値を取りたい場面では、次のような構成にできます。
+
+```toml
+[[env]]
+_.source = { path = "./scripts/load-secrets.sh", redact = true }
+```
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+
+export DATABASE_URL="$(secretctl read app/dev/database-url)"
+export DEPLOY_TOKEN="$(secretctl read app/dev/deploy-token)"
+```
+
+ここでの `secretctl` は、任意の外部コマンドのつもりです。
+1Password CLIでも、AWS Secrets Managerを読むwrapperでも、社内ツールでもかまいません。
+
+大事なのは、mise自体がsecret storeになるわけではないことです。
+外部システムから値を取り込み、それをprojectのenvとして扱う層になっている点が重要です。
+
+なお `env._.source` はbash scriptをsourceする前提です。
+ここはshebangより、公式の前提に合わせてbashで書くのが安全です。
+
+### `required` と `redact` が「チームで読む設定」にしてくれる
+
+envがstateの定義になるなら、足りない値や見せたくない値も宣言できると便利です。
+そこで役立つのが `required` と `redact` です。
+
+```toml
+[env]
+DATABASE_URL = { required = "各自の DB 接続文字列を設定してください" }
+DEPLOY_TOKEN = { required = true, redact = true }
+```
+
+`required` は、「この値がないと実行できない」を設定に書けます。
+READMEやWikiに別で書くより、実際に使う場所へ寄せられます。
+
+`redact` は、taskの出力などで値を見せないための指定です。
+つまりenvは、単に値を持つだけでなく、値の扱い方まで宣言できます。
+
+## tasks は「操作」を定義する層になった
+
+### make や package.json の scripts と何が違うのか
+
+tasksだけを見ると、`make` や `package.json` のscriptsでもよいように見えます。
+実際、それぞれに長所があります。
+
+それでもmiseのtasksを使う意味は、`tools` と `env` を前提に実行できることです。
+入口が1つにまとまるので、説明がかなり減ります。
+
+「Node 22と特定のenvを前提にdev serverを起動してほしい」。
+こうした要求を、別々の道具へまたがずに書けます。
+
+### `depends` と並列実行で DAG に近い書き味になる
+
+最近のtasksは、単発コマンドのaliasを超えています。
+依存関係を張ると、独立したtaskを並列に流せます。
+
+```toml
+[tasks.lint]
+description = "Lint the project"
+run = "pnpm exec eslint ."
+
+[tasks.test]
+description = "Run unit tests"
+run = "pnpm test"
+
+[tasks.check]
+description = "Run checks"
+depends = ["lint", "test"]
+```
+
+この例なら、`check` は `lint` と `test` のまとまりです。
+しかもmiseは並列実行を前提に持っています。
+
+そのため `check` を「開発前の入口」や「deploy前の関門」として置きやすいです。
+`make all` より、開発者向けの動線をそのまま書きやすい印象があります。
+
+### watch も含めると、日常の操作をそのまま載せられる
+
+filesの変化でtaskを再実行したいなら、`mise watch` が使えます。
+`sources` を付けておくと、どこを監視するかもtask側に寄せられます。
+
+```toml
+[tasks.typecheck]
+description = "Typecheck the app"
+run = "pnpm exec tsc --noEmit"
+sources = ["src/**/*.ts", "src/**/*.tsx", "tsconfig.json"]
+```
+
+```bash
+mise watch typecheck
+```
+
+この形にすると、「型検査はどのコマンドで、どのファイルに反応するか」が設定に残ります。
+ローカルのメモやREADMEの一行に依存しにくくなります。
+
+## secrets は env の拡張として見ると収まりがよい
+
+最近のmiseにはsecretsのドキュメントもあります。
+ただ、私はこれを独立機能として見るより、`env` の拡張として見たほうが理解しやすいと感じました。
+
+理由は単純で、最終的に必要なのはsecretそのものではなく、実行時に使うenvだからです。
+暗号化ファイルを `env._.file` で読む。
+外部コマンドで取得して `env._.source` で流し込む。
+必要なら `redact` で見せ方を制御する。
+
+この流れで見ると、secretsだけ別世界にしなくて済みます。
+「機密値を含むstateをどう作るか」という話へ自然に収まります。
+
+## 実運用ではこう書くと整理しやすい
+
+ここまでの話を、1つの `mise.toml` にまとめると次のようになります。
+Webアプリケーションをローカルで動かし、確認後にdeployする想定です。
+
+```toml
+[tools]
+node = "22"
+pnpm = "10"
+"npm:prettier" = "3"
+"cargo:watchexec-cli" = "2"
+
+[env]
+APP_ENV = "development"
+AWS_REGION = "ap-northeast-1"
+_.file = ".env.shared"
+_.path = ["{{config_root}}/node_modules/.bin"]
+DATABASE_URL = { required = "各自の接続先を設定してください。mise.local.toml か事前の環境変数で渡します" }
+DEPLOY_TOKEN = { required = true, redact = true }
+
+[[env]]
+_.source = { path = "./scripts/load-secrets.sh", redact = true }
+
+[tasks.setup]
+description = "Install dependencies"
+run = "pnpm install --frozen-lockfile"
+
+[tasks.dev]
+description = "Start the local dev server"
+run = "pnpm dev"
+
+[tasks.lint]
+description = "Run eslint and prettier"
+run = [
+  "pnpm exec eslint .",
+  "pnpm exec prettier --check .",
+]
+
+[tasks.test]
+description = "Run the test suite"
+run = "pnpm test"
+
+[tasks.typecheck]
+description = "Typecheck the app"
+run = "pnpm exec tsc --noEmit"
+sources = ["src/**/*.ts", "src/**/*.tsx", "tsconfig.json"]
+
+[tasks.check]
+description = "Run all local checks"
+depends = ["lint", "test", "typecheck"]
+
+[tasks.deploy]
+description = "Deploy after local checks"
+depends = ["check"]
+run = "pnpm run deploy"
+```
+
+この例で伝えたいのは、個々の書き方そのものではありません。
+どの層に何を書くかが自然に分かれることです。
+
+- `tools` に実行環境を書く
+- `env` に状態を書く
+- `tasks` に操作を書く
+
+この整理ができると、`README` に散っていた説明がかなり減ります。
+新しく入った人にも、「まず `mise.toml` を見れば前提が分かる」と伝えやすくなります。
+
+さらに再現性を上げたいなら、次も一緒に置くとよいです。
+
+```bash
+mise install
+mise lock
+```
+
+こうしておくと、`mise.toml` が「何を使うか」を表し、`mise.lock` が「何を取るか」を補強します。
+この組み合わせは、実務でも扱いやすいです。
+
+## まとめ
+
+miseには、いまもasdf alternativeとしての役割があります。
+ただ、現在のmiseはそれだけでは捉えきれません。
+
+`tools`、`env`、`tasks` をまとめて扱うことで、開発環境の仕様を1つの設定に寄せられます。
+
+私は、いまのmiseは次の形で整理するのが分かりやすいと見ています。
+
+- `tools` は実行環境
+- `env` は状態
+- `tasks` は操作
+
+この見方に立つと、miseは「便利なversion manager」から一段進みます。
+開発に入る前の下ごしらえを定義するツールとして見えてきます。
+
+asdf alternativeとして見ていたころの理解も、いまのmiseを考える入口としては有効です。
+ですので、過去の理解を捨てる必要はありません。
+
+むしろ「asdf alternativeとして入れるが、いまはそこから少しずつ役割が広がっている」ととらえると、今のmiseはかなり整理しやすいです。
+
+[^1]: 前回記事では、miseの基本的な役割と導入を中心に整理しました。今回の記事はその続編です。
