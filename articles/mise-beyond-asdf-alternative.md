@@ -41,6 +41,9 @@ READMEでも `The front-end to your dev env` と表現されています。
 
 ## いまの mise を理解するためのフレーム
 
+ここから先は、公式の用語定義をそのままなぞるというより、この記事なりの整理で話を進めます。
+そのほうが、2023年ごろにmiseをasdf alternativeとして触った人には、今の広がりがつかみやすいと感じるからです。
+
 この記事では、miseを次の対応でとらえます。
 
 | 要素 | 役割 |
@@ -62,14 +65,13 @@ READMEでも `The front-end to your dev env` と表現されています。
 
 ### asdf 互換は残っている
 
-まず大前提として、miseは今もasdf alternativeです。
-`.tool-versions` 互換もありますし、asdfプラグイン資産も使えます。
+まず大前提として、miseは今もasdf alternativeでなくなったわけではありません。
+`.tool-versions` 互換もありますし、asdfプラグイン資産も一応まだ使えます。
 
-ですので、既存のasdf運用から入る入口は今も残っています。
-ただし、新規に整理するなら `mise.toml` を中心にしたほうが分かりやすいです。
-
-理由は単純で、tools以外も同じ場所に置けるからです。
-いまのmiseを活かすなら、設定を分けるより集約したほうが扱いやすいです。
+ただし、この記事を書いた2026/3/24現在、asdfのpluginはドキュメント上にLegacyと明記されています。
+@[card](https://mise.jdx.dev/asdf-legacy-plugins.html#what-are-asdf-legacy-plugins)
+新規に整理するならmiseの現在のやり方に従って `mise.toml` を中心にしたほうが分かりやすいです。
+今はasdfのalternativeから進化した状態と自分は解釈しています。
 
 ### backend が広がり、「どこから入れるか」まで書ける
 
@@ -88,43 +90,96 @@ pnpm = "10"
 
 ここで書いているのは、単なる「バージョン」ではありません。
 Node.jsは通常のruntimeとして入れつつ、Prettierはnpmから、watchexecはcargoから入れると宣言しています。
-
-つまり `tools` は「必要な実行物の一覧」に近い層です。
-runtime managerというより、実行環境の部品表です。
+miseはバックエンドを指定できます。
+@[card](https://mise.jdx.dev/dev-tools/backends/#backends)
+それぞれのツールを、どこからインストールするかまで含めて定義しています。
+最近多いのはnpmやpipxでのインストールですが、npmはpnpmやbun、pipxはuvがインストールされていれば裏でそれを使ってくれます。
+@[card](https://mise.jdx.dev/dev-tools/backends/npm.html)
+@[card](https://mise.jdx.dev/dev-tools/backends/pipx.html)
 
 ### shim は非対話環境とのつなぎ役
 
 以前の説明では、shellにactivateしてPATHを切り替える話が中心でした。
-それは今も主流です。
+これは今も基本で、対話シェルで使うならまず `mise activate` によるmiseのPATH activationを前提に考えるのが自然です。
+`mise activate` について補足すると、各shellでmiseを有効化するための初期セットアップのようなものです。
+インストール手順の中で、shell起動時にactivateを実行する設定を各shellの設定ファイルへ記述します。
+@[card](https://mise.jdx.dev/installing-mise.html#shells)
 
-ただ、いまのドキュメントではshimの位置付けもだいぶ明確です。
-対話シェルでは `mise activate` が基本です。
-一方で、IDEやスクリプト、CIのような非対話環境ではshimが効きます。
+一方で、毎回shell全体へ反映したいわけではない場面もあります。
+単発のコマンド実行なら `mise exec`、`mise.toml` に書いたtask名でコマンドを呼びたいなら `mise run` でも十分に扱えます。
 
-この違いは `env` を考えると特に重要です。
-shimは便利ですが、envの反映対象が「mise経由で動くもの」に寄りやすいです。
-shell全体の状態としてenvを扱いたいなら、`mise activate` か `mise run` を使うほうが自然です。
+そのうえで、いまのドキュメントではshimsの位置付けもだいぶ明確です。
+IDEやスクリプト、あるいは通常のPATH activationを前提にしづらい環境で使う選択肢として見ると分かりやすいです。
+
+shimsはmiseが今参照しているものの実体を参照しているシンボリックリンクのようなものです。
+たとえば `~/.local/share/mise/shims/node` のようなファイルが作られ、`node` が呼ばれたときにまずそれが実行されます。
+shell上でコマンドを実行する時にあまり意識することはないですが、shellじゃない環境でmiseが管理しているツールを指定したい場合などは便利です。
+
+ここで意識したいのは、envの反映範囲の違いです。
+通常の `mise activate` では、ディレクトリ移動に応じてshell全体のPATHやenvが更新されます。
+一方で `shims` は、shim経由で起動したプロセスの中でmiseの文脈を読む形です。
+shell全体の状態としてenvを扱いたいなら、通常のPATH activationを基本にしつつ、場面によって `mise exec` や `mise run` を使い分けるほうが自然です。
+
+自分の理解では、次のように考えるとイメージしやすいです。
+
+- 普段のターミナル作業なら通常のPATH activation
+- 単発で1コマンドだけ実行したいなら `mise exec`
+- `mise.toml` に書いたtask名でコマンドを呼びたいなら `mise run`
+- IDEやスクリプトのように、shellの初期化を前提にしづらいなら `shims`
+
+たとえばローカルで開発していて、`cd` した瞬間に `node` や `pnpm` が切り替わってほしい場面があります。
+さらに `AWS_PROFILE` のようなenvまでまとめて反映したいなら、これは通常のPATH activationが一番自然です。
+
+```bash
+cd myapp
+echo $AWS_PROFILE
+pnpm dev
+```
+
+一方で、「普段のshell設定には触れたくないが、このコマンドだけはmiseの環境で動かしたい」という場面なら `mise exec` が合っています。
+
+```bash
+mise exec -- pnpm test
+mise exec -- bash -c 'echo $AWS_PROFILE'
+```
+
+`mise run` が分かりやすいのは、長いコマンド列や前提付きの処理をtask名で呼べるようにしたい場面です。
+個人的には、開発サーバ起動やdeployのように、チームで同じ名前にそろえたい処理はこの形が分かりやすいです。
+
+```bash
+mise run dev
+mise run deploy
+```
+
+そしてshimsを使う場面として分かりやすいのは、たとえばIDEが `node` や `prettier` を直接呼ぶケースです。
+この場合、IDEなどはshellを経由しないでツールを呼び出すため、`activate`で有効化されたPATHを参照できません。
+そういうときにshim経由で実行できるようにしておくと、IDEやスクリプト側からは普通の `node` や `prettier` に見えつつ、裏ではmiseが実際の実行ファイルを選んで起動できます。
+
+ただし、ここでも `env` の見え方には差があります。
+たとえば通常のPATH activationなら、`echo $AWS_PROFILE` で値をそのまま確認できます。
+一方でshim経由の実行は、shimが起動したプロセス側でmiseの文脈を読む形です。
+そのため、同じ値がshell全体にそのまま出ているとは限りません。
 
 ### lock は「たまたま今入ったもの」を減らす
 
-`mise install` だけでも便利ですが、チーム運用では再現性をもう一段上げたくなります。
-そのときに役立つのが `mise lock` です。
+`tools` に何を書くかだけでなく、実際にどの配布物を取るかもある程度そろえたい、という場面があります。
+そのときに関わってくるのが `mise lock` です。
 
 ```bash
-mise install
 mise lock
-git add mise.lock
 ```
 
-`mise.lock` には、対象platformのダウンロードURLやchecksumが入ります。
-これにより、「Node 22系を入れる」は同じでも、どの配布物を取るかまで固定しやすくなります。
+現行のドキュメントでは、`mise lock` はlockfileに記録されるURLやchecksumを更新するためのしくみとして説明されています。
+ですので、アプリケーション依存のlockfileと同じものだと考えるより、開発環境で取得する配布物の情報を管理するものと見るほうが近いです。
 
-言語ごとのlockfileとは少し役割が違います。
-ここで固定しているのは、アプリケーションの依存関係ではなく、開発環境を構成する配布物です。
+`mise.toml` が「何を使うか」を表し、`mise.lock` が「どの配布物を取るか」を補う。
+この関係で理解しておくと、役割をつかみやすいです。
 
 ## env は「dotenv の置き換え」より広い
 
 ### env は state を書く場所と考えると分かりやすい
+
+これは公式の用語定義というより、この記事の中で理解しやすくするための整理です。
 
 `env` を初見で見ると、`.env` を `mise.toml` へ移すための機能に見えます。
 その理解でも一部は合っています。
@@ -138,12 +193,14 @@ git add mise.lock
 [env]
 APP_ENV = "development"
 AWS_REGION = "ap-northeast-1"
+AWS_PROFILE = "myapp-dev"
 _.file = ".env.shared"
 _.path = ["{{config_root}}/node_modules/.bin"]
 ```
 
-この例でやっていることは3つです。
+この例でやっていることは4つです。
 アプリケーションの状態を決める値を置くこと。
+利用するAWSプロファイルを決めること。
 共有する `.env` 系ファイルを読むこと。
 プロジェクト配下の実行パスを足すことです。
 
@@ -192,6 +249,11 @@ export DEPLOY_TOKEN="$(secretctl read app/dev/deploy-token)"
 
 なお `env._.source` はbash scriptをsourceする前提です。
 ここはshebangより、公式の前提に合わせてbashで書くのが安全です。
+
+ここまでをまとめると、いまの `env` は単なるkey/valueの置き場ではありません。
+値を直接書くだけでなく、外から読み込み、必要に応じて動的に組み立て、その扱い方まで宣言できる層になっています。
+
+この記事で `env = 状態` と整理しているのは、こうした「値そのもの」より「そのプロジェクトがどんな状態で動くか」をまとめて表しやすいからです。
 
 ### `required` と `redact` が「チームで読む設定」にしてくれる
 
@@ -270,14 +332,17 @@ mise watch typecheck
 ## secrets は env の拡張として見ると収まりがよい
 
 最近のmiseにはsecretsのドキュメントもあります。
-ただ、私はこれを独立機能として見るより、`env` の拡張として見たほうが理解しやすいと感じました。
+たとえば `sops` で暗号化したファイルを読む形や、`age` によるinlineな暗号化も用意されています。
+
+そのうえで、私はこれを独立機能として見るより、`env` の拡張として見たほうが理解しやすいと感じました。
 
 理由は単純で、最終的に必要なのはsecretそのものではなく、実行時に使うenvだからです。
 暗号化ファイルを `env._.file` で読む。
 外部コマンドで取得して `env._.source` で流し込む。
-必要なら `redact` で見せ方を制御する。
+必要に応じてinlineで暗号化した値を置く。
+さらに `redact` で見せ方を制御する。
 
-この流れで見ると、secretsだけ別世界にしなくて済みます。
+こうして見ると、公式には `secrets` として独立したまとまりがありつつ、理解のし方としては `env` の延長線上に置くと整理しやすいです。
 「機密値を含むstateをどう作るか」という話へ自然に収まります。
 
 ## 実運用ではこう書くと整理しやすい
@@ -347,10 +412,9 @@ run = "pnpm run deploy"
 この整理ができると、`README` に散っていた説明がかなり減ります。
 新しく入った人にも、「まず `mise.toml` を見れば前提が分かる」と伝えやすくなります。
 
-さらに再現性を上げたいなら、次も一緒に置くとよいです。
+さらに配布物の情報までそろえたいなら、`mise lock` も合わせて見ておくとよいです。
 
 ```bash
-mise install
 mise lock
 ```
 
@@ -359,8 +423,7 @@ mise lock
 
 ## まとめ
 
-miseには、いまもasdf alternativeとしての役割があります。
-ただ、現在のmiseはそれだけでは捉えきれません。
+miseはasdf alternativeからはっきりと進化しつつあります。
 
 `tools`、`env`、`tasks` をまとめて扱うことで、開発環境の仕様を1つの設定に寄せられます。
 
@@ -376,6 +439,6 @@ miseには、いまもasdf alternativeとしての役割があります。
 asdf alternativeとして見ていたころの理解も、いまのmiseを考える入口としては有効です。
 ですので、過去の理解を捨てる必要はありません。
 
-むしろ「asdf alternativeとして入れるが、いまはそこから少しずつ役割が広がっている」ととらえると、今のmiseはかなり整理しやすいです。
+むしろ「asdf alternativeとして入り、そこから少しずつ役割が広がってきた」ととらえると、今のmiseはかなり整理しやすいです。
 
 [^1]: 前回記事では、miseの基本的な役割と導入を中心に整理しました。今回の記事はその続編です。
