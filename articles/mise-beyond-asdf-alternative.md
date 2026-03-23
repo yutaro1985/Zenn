@@ -1,10 +1,15 @@
 ---
-title: "miseはもうasdf alternativeだけではない、開発環境の仕様として捉え直す"
-emoji: "🔪"
+title: "miseはasdf alternativeからどこまで進化したのか"
+emoji: "🧐"
 type: "tech" # tech: 技術記事 / idea: アイデア
-topics: ["mise","asdf","環境構築"]
-published: false
+topics: ["mise","asdf","direnv","環境構築"]
+published: true
+published_at: 2026-03-24 08:00
 ---
+
+:::message
+この記事はLLMと壁打ちしながら作成しました。
+:::
 
 ## 最初に
 
