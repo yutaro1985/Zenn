@@ -7,9 +7,7 @@ published: true
 published_at: 2026-03-24 08:00
 ---
 
-:::message
-この記事はLLMと壁打ちしながら作成しました。
-:::
+※この記事はLLMと壁打ちしながら作成しました。
 
 ## 最初に
 
@@ -173,11 +171,10 @@ mise run deploy
 `tools` に何を書くかだけでなく、実際にどの配布物を取るかもある程度そろえたい、という場面があります。
 そのときに関わってくるのが `mise lock` です。
 
-```bash
-mise lock
-```
-
-現行のドキュメントでは、`mise lock` はlockfileに記録されるURLやchecksumを更新するためのしくみとして説明されています。
+現行のhelpやドキュメントでは、`mise lock` はlockfileに記録されるURLやchecksumを更新するためのしくみとして説明されています。
+そのため、「`mise.toml` だけ置いた新しいprojectで最初の `mise.lock` を作るコマンド」と受け取ると少しズレます。
+すでに運用しているlockfileを更新するコマンドとして理解しておくほうが自然です。
+lockfileがまだない状態では、何が作られるかを表示する挙動になります。
 ですので、アプリケーション依存のlockfileと同じものだと考えるより、開発環境で取得する配布物の情報を管理するものと見るほうが近いです。
 
 `mise.toml` が「何を使うか」を表し、`mise.lock` が「どの配布物を取るか」を補う。
@@ -328,6 +325,8 @@ depends = ["lint", "test"]
 filesの変化でtaskを再実行したいなら、`mise watch` が使えます。
 これは、指定したtaskを一度実行して終わりではなく、関連するファイルの変化を監視しながら繰り返し走らせるためのコマンドです。
 たとえば型検査やテストのように、「保存するたびにもう一度流したい」処理と相性がよいです。
+ただし `mise watch` は内部で `watchexec` を使うため、利用前に `watchexec` を入れておく必要があります。
+このあと載せる実運用例では `cargo:watchexec-cli` を `tools` に含めているのはそのためです。
 
 つまり `mise run typecheck` が1回だけの実行だとすると、`mise watch typecheck` は「監視しながら必要なタイミングでもう一度実行する」イメージです。
 もちろん、型検査やlintの一部はIDEのextensionやlanguage serverがその場で見せてくれることもあります。
@@ -384,7 +383,7 @@ _.file = ".env.shared"
 _.path = ["{{config_root}}/node_modules/.bin"]
 _.source = { path = "./scripts/load-secrets.sh", redact = true }
 DATABASE_URL = { required = "各自の接続先を設定してください。mise.local.toml か事前の環境変数で渡します" }
-DEPLOY_TOKEN = { required = true, redact = true }
+DEPLOY_TOKEN = { redact = true }
 
 [tasks.setup]
 description = "Install dependencies"
@@ -422,6 +421,10 @@ run = "pnpm run deploy"
 
 この例で伝えたいのは、個々の書き方そのものではありません。
 どの層に何を書くかが自然に分かれることです。
+
+ここでは `DEPLOY_TOKEN` をtop-levelで `required = true` にしていません。
+deployだけで使うsecretまで常に必須にすると、`setup` や `dev` のようなローカルtaskまで止まりやすいからです。
+「そのproject全体で常に必要な値」と「一部の操作でだけ必要な値」は分けて考えるほうが、実運用では扱いやすいです。
 
 - `tools` に実行環境を書く
 - `env` に状態を書く
