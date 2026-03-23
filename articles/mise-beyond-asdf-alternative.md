@@ -460,8 +460,6 @@ env = { _.source = { path = "./scripts/load-secrets.sh", redact = true }, DEPLOY
 さらに配布物の情報までそろえたいなら、`mise.lock` も合わせて運用すると見通しがよくなります。
 ここで押さえたいのは、`mise.toml` が「何を使うか」を表し、`mise.lock` が取得する配布物の情報を補う、という役割分担です。
 そして `mise lock` は、既存のlockfileに入っているURLやchecksumを更新する時に使うものとして理解しておくと整理しやすいです。
-こうしておくと、`mise.toml` が「何を使うか」を表し、`mise.lock` が「何を取るか」を補強します。
-この組み合わせは、実務でも扱いやすいです。
 
 ## まとめ
 
