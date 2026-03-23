@@ -8,6 +8,7 @@ published_at: 2026-03-24 08:00
 ---
 
 :::message
+<!-- textlint-disable-next-line ja-technical-writing/ja-no-mixed-period -->
 この記事はLLMと壁打ちしながら作成しました。
 <!-- textlint-disable-next-line ja-technical-writing/ja-no-mixed-period -->
 :::
@@ -250,12 +251,14 @@ _.source = { path = "./scripts/load-secrets.sh", redact = true }
 #!/usr/bin/env bash
 set -euo pipefail
 
-export DATABASE_URL="$(secretctl read app/dev/database-url)"
-export DEPLOY_TOKEN="$(secretctl read app/dev/deploy-token)"
+export DATABASE_URL="${DATABASE_URL:-$(aws secretsmanager get-secret-value --secret-id app/dev/database-url --query SecretString --output text)}"
+export DEPLOY_TOKEN="${DEPLOY_TOKEN:-$(aws secretsmanager get-secret-value --secret-id app/dev/deploy-token --query SecretString --output text)}"
 ```
 
-ここでの `secretctl` は実際のツールではなく、任意の外部コマンド名を示すプレースホルダーとして挙げた例です。
-1Password CLIでも、AWS Secrets Managerを読むwrapperでも、社内ツールでもかまいません。
+ここでは、実在する例としてAWS CLIでSecrets Managerを読む形にしています。
+ただし大事なのはコマンド名そのものではなく、外部システムから値を取り込んで `env._.source` でprojectのenvへ渡す流れです。
+1Password CLIでも、AWS Secrets Managerを読むwrapperでも、社内ツールでも同じ考え方で組めます。
+また、上のように `${DATABASE_URL:-...}` としておくと、shellや `mise.local.toml` 側で先に入れた値を優先できます。
 
 大事なのは、mise自体がsecret storeになるわけではないことです。
 外部システムから値を取り込み、それをprojectのenvとして扱う層になっている点が重要です。
@@ -384,7 +387,6 @@ APP_ENV = "development"
 AWS_REGION = "ap-northeast-1"
 _.file = ".env.shared"
 _.path = ["{{config_root}}/node_modules/.bin"]
-_.source = { path = "./scripts/load-secrets.sh", redact = true }
 
 [tasks.setup]
 description = "Install dependencies"
@@ -393,7 +395,7 @@ run = "pnpm install --frozen-lockfile"
 [tasks.dev]
 description = "Start the local dev server"
 run = "pnpm dev"
-env = { DATABASE_URL = { required = "ローカル開発で使う接続先を設定してください。mise.local.toml か事前の環境変数で渡します" } }
+env = { _.source = { path = "./scripts/load-secrets.sh", redact = true }, DATABASE_URL = { required = "ローカル開発で使う接続先を設定してください。mise.local.toml か事前の環境変数で渡します" } }
 
 [tasks.lint]
 description = "Run eslint and prettier"
@@ -419,14 +421,14 @@ depends = ["lint", "test", "typecheck"]
 description = "Deploy after local checks"
 depends = ["check"]
 run = "pnpm run deploy"
-env = { DEPLOY_TOKEN = { required = "deploy に使う token を設定してください。mise.local.toml か事前の環境変数で渡します", redact = true } }
+env = { _.source = { path = "./scripts/load-secrets.sh", redact = true }, DEPLOY_TOKEN = { required = "deploy に使う token を設定してください。mise.local.toml か事前の環境変数で渡します", redact = true } }
 ```
 
 この例で伝えたいのは、個々の書き方そのものではありません。
 どの層に何を書くかが自然に分かれることです。
 
-ここでは `DATABASE_URL` や `DEPLOY_TOKEN` をtop-levelの `[env]` に置いていません。
-`dev` だけで必要な値や `deploy` だけで必要なsecretまで常に評価すると、`setup` や `lint` のような別のtaskまで止まりやすいからです。
+ここでは `DATABASE_URL` や `DEPLOY_TOKEN` だけでなく、secretを読む `_.source` もtop-levelの `[env]` に置いていません。
+`dev` や `deploy` でだけ必要な読み込みまで常に評価すると、`setup` や `lint` のような別のtaskまで止まりやすいからです。
 「project全体で常に必要な値」と「一部の操作でだけ必要な値」を分け、後者はtaskごとの `env` に寄せるほうが、実運用では扱いやすいです。
 
 - `tools` に実行環境を書く
