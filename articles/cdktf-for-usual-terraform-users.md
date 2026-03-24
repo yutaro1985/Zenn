@@ -14,6 +14,10 @@ published: true
 の12日目です。
 :::
 
+:::message alert
+2026年3月時点の補足です。CDK for Terraformは2025年12月10日にdeprecatedになり、archiveされました。本家による保守は終了しています。この記事は2023年時点の検証記録としてご参照ください。今後の選択肢としては、HCLベースのTerraformへの移行や、コミュニティフォークであるcdk-terrainの確認が候補になります。関連する話は[archiveされたCDK for Terraformとコミュニティフォークのcdk-terrainを調べる](https://zenn.dev/yutaro1985/articles/cdktf-archive-and-cdk-terrain)にもまとめています。
+:::
+
 ## はじめに
 
 [CDK for Terraform](https://developer.hashicorp.com/terraform/cdktf?product_intent=terraform)(以下、CDKTFと記述します。)がGAされてから1年以上経ちました。

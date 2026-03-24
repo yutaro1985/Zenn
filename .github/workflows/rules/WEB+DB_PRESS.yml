@@ -1079,10 +1079,14 @@ rules:
     expected: 初めて
   - pattern: はじめた
     expected: 始めた
+  - pattern: はじめる
+    expected: 始める
+  - pattern: はじめます
+    expected: 始めます
+  - pattern: はじめまし
+    expected: 始めまし
   - pattern: はじま
     expected: 始ま
-  - pattern: はじめ
-    expected: 始め
   - pattern: かたまり
     expected: 塊
   - pattern: やりかた
