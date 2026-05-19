@@ -1,24 +1,27 @@
 # Zenn コンテンツ用リポジトリ — AI エージェント向けガイド
 
-このリポジトリは Zenn 記事/本の原稿管理用です。エージェントは以下の流れ・規約に従って作業してください。一般論ではなく、このリポジトリ固有のパターンをまとめています。
+このリポジトリはZenn記事/本の原稿管理用です。エージェントは以下の流れ・規約に従って作業してください。一般論ではなく、このリポジトリ固有のパターンをまとめています。
 
 ## 構成と役割
-- `articles/`: 記事の Markdown 原稿を配置。ファイル名はスラッグ（例: `cdktf-for-usual-terraform-users.md`）。
+- `articles/`: 記事のMarkdown原稿を配置。ファイル名はスラッグ（例: `cdktf-for-usual-terraform-users.md`）。
 - `images/<slug>/`: 記事ごとの画像ディレクトリ。記事からは `/images/<slug>/...` で参照。
-- `books/`: Zenn 本の原稿（未使用の場合あり）。
+- `books/`: Zenn本の原稿（未使用の場合あり）。
 - `.textlintrc`: 日本語向け校正設定（`prh`, `preset-ja-*`, `spellcheck-tech-word`）。
 - `.github/workflows/rules/WEB+DB_PRESS.yml`: `prh` で参照する用字用語ルール集。
-- `package.json`: `zenn-cli` と `textlint` 関連パッケージを管理（npm scripts は最小）。
+- `.github/workflows/textlint.yml`: PR時に`textlint`を`reviewdog`で実行するCI。
+- `mise.toml`: `Node.js`/`pnpm`のバージョン管理。
+- `package.json`: `zenn-cli` と `textlint` 関連パッケージを管理（npm scriptsは最小）。
 
 ## 典型ワークフロー
 - 新規ブランチ: 命名は任意（例: `add/20251204_advent_calendar` など）。
-- 記事作成: `npx zenn new:article --title "タイトル" --slug "my-article" --type tech`
+- `Node.js`/`pnpm`は`mise.toml`の指定を前提とし、必要に応じて`mise install`を実行。
+- 記事作成: `pnpm exec zenn new:article --title "タイトル" --slug "my-article" --type tech`
 - 画像配置: `mkdir -p images/my-article` に画像を保存し、本文から `/images/my-article/xxx.png` で参照。
-- ローカルプレビュー: `npx zenn preview` を実行し `http://localhost:8000` を確認。
-- 校正（lint）: `npx textlint -f stylish "articles/**/*.md"`／自動修正は `--fix` を付与。
-- レビュー後、`main` へ PR。公開は Zenn 側の同期に従う。
+- ローカルプレビュー: `pnpm exec zenn preview` または `pnpm run preview` を実行し `http://localhost:8000` を確認。
+- 校正（lint）: `pnpm exec textlint -f stylish "articles/**/*.md"` または `pnpm run lint`／自動修正は `--fix` を付与。
+- レビュー後、`main` へPR。公開はZenn側の同期に従う。
 
-## フロントマター規約（実例に基づく）
+## フロントマター規約（実例ベース）
 - 基本例（`articles/cdktf-for-usual-terraform-users.md` ほか）
   ```md
   ---
@@ -31,7 +34,7 @@
   # published_at: 2025-12-04 07:00
   ---
   ```
-- 予約公開する記事は `published: true` と共に `published_at` を設定（未設定なら即時公開）。
+- 予約公開する記事は `published: true` とともに `published_at` を設定（未設定なら即時公開）。
 - 下書きは `published: false` を使用。
 
 ## 画像と参照パターン
@@ -40,39 +43,46 @@
 - 相対ではなくルート起点（`/images/...`）で参照するのが既存記事の実例。
 
 ## ライティングスタイル
-- 既存記事の文体・構成・思考過程を踏襲して作成（例: `articles/connect-cloud9-via-remote-ssh.md`, `articles/introduction_of_mise.md`, `articles/cdktf-for-usual-terraform-users.md`）。
-- 構成の基本: 「はじめに」で背景と狙い→用語・前提→手順→ハマりどころ/補足→まとめ。
+- 既存記事の文体・構成・思考過程を踏襲して作成。
+- 例: `articles/connect-cloud9-via-remote-ssh.md`
+- 例: `articles/introduction_of_mise.md`
+- 例: `articles/cdktf-for-usual-terraform-users.md`
+- 構成の基本:「はじめに」で背景と狙い→用語・前提→手順→ハマりどころ/補足→まとめ。
 - アドベントカレンダー等は`:::message`ブロックで明示し、必要に応じて`@[card](URL)`を利用。
 - 参考情報や補足には脚注（`[^1]`）を活用し、末尾に脚注本文を配置。
 - コードやコマンドはフェンス付きコードブロック＋言語指定（`bash`, `ts`, `toml` 等）。
 - コマンド例は原則macOS + fish前提。heredocは避け、`printf`/`echo`で代替。
+- JavaScript系のローカル実行は`npx`より`pnpm exec`を優先し、依存関係を変更するときは`npm`実行で`package-lock.json`を不用意に更新しない。
 - 用字用語は`.textlintrc`と`WEB+DB_PRESS.yml`に準拠。lint指摘を尊重して修正。
   - ただし、従った結果日本語として不自然な表現になるときは従わないものとする。
 
 ## 校正（textlint）
 - 設定ファイル: `.textlintrc`。`prh` のルールは `.github/workflows/rules/WEB+DB_PRESS.yml` を参照。
 - 実行例:
-  - 全体: `npx textlint -f stylish "articles/**/*.md"`
-  - 1ファイル: `npx textlint -f stylish articles/<slug>.md`
-  - 自動修正: `npx textlint --fix "articles/**/*.md"`
+  - 全体: `pnpm exec textlint -f stylish "articles/**/*.md"` または `pnpm run lint`
+  - 1ファイル: `pnpm exec textlint -f stylish articles/<slug>.md`
+  - 自動修正: `pnpm exec textlint --fix "articles/**/*.md"` または `pnpm run lint:fix`
+- PRでは`.github/workflows/textlint.yml`により`textlint`が走るため、PR作成前に対象ファイルlintを通しておく。
 - 注意: ルールファイルのパスを変更する場合は `.textlintrc` の `rulePaths` も更新が必要。
 
 ## Zenn CLI の利用
-- 依存関係は `package.json` に定義済み（`zenn-cli`）。`npx zenn ...` でローカル実行。
+- 依存関係は `package.json` に定義済み（`zenn-cli`）。`pnpm exec zenn ...` でローカル実行。
 - よく使うコマンド:
-  - 新規記事: `npx zenn new:article --title "..." --slug "..." --type tech`
-  - プレビュー: `npx zenn preview`
+  - 新規記事: `pnpm exec zenn new:article --title "..." --slug "..." --type tech`
+  - プレビュー: `pnpm exec zenn preview` または `pnpm run preview`
 
 ### npm scripts（任意）
-- `npm run preview`: `zenn preview`
-- `npm run lint`: `textlint -f stylish "articles/**/*.md"`
-- `npm run lint:fix`: `textlint --fix "articles/**/*.md"`
+- `pnpm run preview`: `zenn preview`
+- `pnpm run lint`: `textlint -f stylish "articles/**/*.md"`
+- `pnpm run lint:fix`: `textlint --fix "articles/**/*.md"`
 
 ## リポジトリの前提・補足
-- 既存 README は最小。運用上のコマンドは本ファイルの記載を参照。
-- 文章スタイルは日本語の用字用語ルール（WEB+DB PRESS ベース）に準拠する設定。lint 結果を尊重。
+- 既存READMEは最小。運用上のコマンドは本ファイルの記載を参照。
+- 文章スタイルは日本語の用字用語ルールに準拠する設定。lint結果を尊重。
 - 例示ファイル: `articles/cdktf-for-usual-terraform-users.md`（画像参照やフロントマターの好例）。
--.macOS + fish を前提にコマンド例を記述（heredoc 非推奨）。
+- macOS + fishを前提にコマンド例を記述（heredoc非推奨）。
 
 ---
-不明点や追加したい運用（例: 固定の npm scripts、CI での textlint 実行、画像最適化方針など）があればお知らせください。実運用に合わせて本ガイドを拡張します。
+不明点や追加したい運用があればお知らせください。
+例: 固定のnpm scripts、CIでのtextlint実行、画像の最適化方針など。
+実運用に合わせて本ガイドを拡張します。
