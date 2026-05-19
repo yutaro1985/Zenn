@@ -1,4 +1,4 @@
-# AGENTS.md
+# Zenn コンテンツ用リポジトリ — AI エージェント向けガイド (Codex)
 
 このリポジトリはZenn記事・本の原稿を管理するためのものです。Codexは以下の方針に従って作業してください。
 
@@ -22,16 +22,16 @@
 - `:::message` や `:::message alert` は意味がある限り維持する。
 - コマンド例はmacOSとfishを前提にする。
 - fish前提のため、複数行の入力例では`heredoc`を避け、必要に応じて`printf`や`echo`で代替する。
-- JavaScript系のローカル実行は `npx` より `pnpm exec` を優先する。
+- JavaScript系のローカル実行は`npx`より`pnpm exec`を優先する。
 - `Node.js`/`pnpm`は`mise.toml`の指定を前提にし、必要に応じて`mise install`を案内する。
-- 依存関係を変更する場合は`pnpm`を使い、`npm`実行により`package-lock.json`を不用意に更新しない。
+- 依存関係を変更する場合は`pnpm`を使い、`npm`実行により不要な`package-lock.json`を生成しない。
 
 ## 記事の書き方
 
 - 基本構成は「はじめに」→前提・背景→手順→補足やハマりどころ→まとめ。
-- 参考情報や補足は必要に応じて脚注 `[^1]` を使う。
+- 参考情報や補足は必要に応じて脚注`[^1]`を使う。
 - コマンドやコードはフェンス付きコードブロックを使い、言語名を付ける。
-- 画像は `images/<slug>/` に置き、本文では `/images/<slug>/file.png` の形式で参照する。
+- 画像は`images/<slug>/`に置き、本文では`/images/<slug>/file.png`の形式で参照する。
 - 相対パスで画像参照を書かない。
 
 ## フロントマター
@@ -73,5 +73,6 @@ published: true
 ## 検証
 
 - Markdownを編集したら、可能なら対象ファイルに対して `pnpm exec textlint -f stylish ...` を実行して確認する。
-- PRでは`.github/workflows/textlint.yml`により`textlint`が走るため、PR作成前に対象ファイルlintを通しておく。
+- 記事PRでは`.github/workflows/textlint.yml`により`articles/`配下へ`textlint`が走るため、PR作成前に対象記事のlintを通しておく。
+- 記事以外のMarkdownを編集した場合も、可能なら対象ファイルへ個別に`textlint`を実行する。
 - 記事全体に影響する変更をした場合のみ、必要に応じて全体lintやプレビューを行う。

@@ -11,6 +11,7 @@
 - `.github/workflows/textlint.yml`: PR時に`textlint`を`reviewdog`で実行するCI。
 - `mise.toml`: `Node.js`/`pnpm`のバージョン管理。
 - `package.json`: `zenn-cli` と `textlint` 関連パッケージを管理（npm scriptsは最小）。
+- `AGENTS.md`: Codex向けの同等ガイド。内容を更新する場合は、必要に応じてこちらとの整合性も保つ。
 
 ## 典型ワークフロー
 - 新規ブランチ: 命名は任意（例: `add/20251204_advent_calendar` など）。
@@ -52,7 +53,7 @@
 - 参考情報や補足には脚注（`[^1]`）を活用し、末尾に脚注本文を配置。
 - コードやコマンドはフェンス付きコードブロック＋言語指定（`bash`, `ts`, `toml` 等）。
 - コマンド例は原則macOS + fish前提。heredocは避け、`printf`/`echo`で代替。
-- JavaScript系のローカル実行は`npx`より`pnpm exec`を優先し、依存関係を変更するときは`npm`実行で`package-lock.json`を不用意に更新しない。
+- JavaScript系のローカル実行は`npx`より`pnpm exec`を優先し、依存関係を変更するときは`npm`実行で不要な`package-lock.json`を生成しない。
 - 用字用語は`.textlintrc`と`WEB+DB_PRESS.yml`に準拠。lint指摘を尊重して修正。
   - ただし、従った結果日本語として不自然な表現になるときは従わないものとする。
 
@@ -62,7 +63,8 @@
   - 全体: `pnpm exec textlint -f stylish "articles/**/*.md"` または `pnpm run lint`
   - 1ファイル: `pnpm exec textlint -f stylish articles/<slug>.md`
   - 自動修正: `pnpm exec textlint --fix "articles/**/*.md"` または `pnpm run lint:fix`
-- PRでは`.github/workflows/textlint.yml`により`textlint`が走るため、PR作成前に対象ファイルlintを通しておく。
+- 記事PRでは`.github/workflows/textlint.yml`により`articles/`配下へ`textlint`が走るため、PR作成前に対象記事のlintを通しておく。
+- 記事以外のMarkdownを編集した場合も、可能なら対象ファイルへ個別に`textlint`を実行する。
 - 注意: ルールファイルのパスを変更する場合は `.textlintrc` の `rulePaths` も更新が必要。
 
 ## Zenn CLI の利用
