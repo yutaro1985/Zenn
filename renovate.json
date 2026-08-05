@@ -1,0 +1,14 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended", "schedule:weekly"],
+  "enabledManagers": ["npm"],
+  "timezone": "Asia/Tokyo",
+  "automerge": false,
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "schedule": [],
+    "prCreation": "immediate",
+    "automerge": false,
+    "labels": ["security"]
+  }
+}
