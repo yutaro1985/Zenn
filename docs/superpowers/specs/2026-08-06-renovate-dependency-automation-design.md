@@ -73,7 +73,7 @@ permissions:
 
 パッケージ検証jobは次の手順を実行する。
 
-1. `actions/checkout@v6`でcheckoutする。
+1. `actions/checkout@v6`でcheckoutし、`persist-credentials: false`を指定する。
 2. `pnpm/action-setup@v6`でpnpm 9.15.9をセットアップする。
 3. `actions/setup-node@v7`でNode.js 24.13.0をセットアップし、`pnpm-lock.yaml`をキーにpnpm cacheを有効化する。
 4. `pnpm install --frozen-lockfile`を実行する。
@@ -109,6 +109,8 @@ fail-on-scopes: runtime, development, unknown
 5. RenovateがGitHub Actionsを更新対象に含めない間は、Dependabot security updatesを無効化しない。
 
 これらはGitHub repository settingsまたはApp installationへの外部書き込みであり、設定ファイルのPRとは分けて報告する。
+
+Actionsのfull commit SHA固定は供給網リスクをさらに下げられるが、既存workflowもmajor tagを利用しているため、今回のRenovate導入PRでは範囲を広げず、別途検討する。
 
 ## Error handling and residual risk
 
