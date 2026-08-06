@@ -98,4 +98,4 @@ jobs:
             -filter-mode=nofilter \
             -level=warning \
             -fail-level=none \
-            < artifacts/textlint-checkstyle.xml
+            < artifacts/textlint-rdjson.json
