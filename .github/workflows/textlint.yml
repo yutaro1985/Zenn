@@ -3,7 +3,6 @@ on: [pull_request]
 
 permissions:
   contents: read
-  pull-requests: write
 
 jobs:
   textlint:
@@ -26,11 +25,56 @@ jobs:
           cache-dependency-path: pnpm-lock.yaml
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-      - name: textlint-github-pr-review
-        uses: tsuyoshicho/action-textlint@ace6abb4fd6736f30f2319c7e21b7adf4e93dc46 # v3
+
+      - name: Run textlint
+        id: run-textlint
+        shell: bash
+        run: |
+          set +e
+          pnpm exec textlint -f checkstyle "articles/**" > textlint-checkstyle.xml
+          status=$?
+          if [ "$status" -gt 1 ]; then
+            exit "$status"
+          fi
+
+      - name: Upload textlint report
+        if: steps.run-textlint.outcome == 'success'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          github_token: ${{ secrets.github_token }}
-          reporter: github-pr-review
-          level: warning
-          textlint_flags: "articles/**"
-          package_manager: pnpm
+          name: textlint-checkstyle
+          path: textlint-checkstyle.xml
+          if-no-files-found: error
+
+  review-posting:
+    name: runner / textlint review
+    needs: textlint
+    if: needs.textlint.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # This job only posts findings from the artifact; it does not execute PR code.
+      pull-requests: write
+    steps:
+      - name: Download textlint report
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: textlint-checkstyle
+          path: artifacts
+
+      - name: Set up reviewdog
+        uses: reviewdog/action-setup@d8edfce3dd5e1ec6978745e801f9c50b5ef80252 # v1.4.0
+        with:
+          reviewdog_version: v0.21.0
+
+      - name: Post textlint review
+        env:
+          REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          reviewdog \
+            -f=checkstyle \
+            -name=textlint \
+            -reporter=github-pr-review \
+            -filter-mode=added \
+            -level=warning \
+            -fail-level=none \
+            < artifacts/textlint-checkstyle.xml

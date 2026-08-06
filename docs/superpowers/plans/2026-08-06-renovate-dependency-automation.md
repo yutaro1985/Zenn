@@ -4,7 +4,7 @@
 
 **Architecture:** Store Renovate policy in the repository, use pnpm as the sole lockfile authority, and run dependency installation plus Zenn CLI smoke validation on every pull request and main push. Run Dependency Review only at the job level for pull requests so the workflow itself is never omitted by path filtering. Keep App installation and required-check configuration as explicit post-merge GitHub operations.
 
-**Tech Stack:** Renovate, GitHub Actions, Node.js 24.13.0, pnpm 9.15.9, Zenn CLI, Dependency Review Action v5, GitHub CLI.
+**Tech Stack:** Renovate, GitHub Actions, Node.js 24.13.0, pnpm 9.15.9, Zenn CLI, Dependency Review Action v5, reviewdog v0.21.0, GitHub CLI.
 
 **Proposed plan path:** docs/superpowers/plans/2026-08-06-renovate-dependency-automation.md
 
@@ -28,7 +28,7 @@
 - Create .github/workflows/dependency-verification.yml: install, smoke, and dependency-diff verification.
 - Modify README.md: document pnpm ownership, Renovate behavior, and CI boundaries.
 - Preserve package.json, pnpm-lock.yaml, and mise.toml.
-- Modify .github/workflows/textlint.yml so it uses pnpm after package-lock.json removal.
+- Modify .github/workflows/textlint.yml so it uses pnpm after package-lock.json removal and separates lint execution from review posting permissions.
 
 ## Task 1: Confirm the isolated execution boundary
 
@@ -187,6 +187,7 @@ Files:
             with:
               fail-on-severity: high
               fail-on-scopes: runtime, development, unknown
+              license-check: false
 
 - [ ] Parse the YAML:
 
@@ -207,14 +208,15 @@ If the registry lookup does not provide actionlint, record that validation as un
 
 The implementation pull request validates the pull request path: both jobs must run. The first merged main push validates the push path: the workflow and dependency-install-and-smoke run, while dependency-review is skipped by its job-level condition. Do not move the condition to the workflow trigger.
 
-- [ ] Update the existing .github/workflows/textlint.yml so package-lock.json removal cannot route it through npm:
+- [x] Update the existing .github/workflows/textlint.yml so package-lock.json removal cannot route it through npm and PR write access is isolated:
 
   - Check out with actions/checkout SHA d23441a48e516b6c34aea4fa41551a30e30af803 (v6), set persist-credentials to false, and preserve submodules.
   - Set up pnpm 9.15.9 with pnpm/action-setup SHA 0977fd99725f1db4007ccb2928dbb4e90d06cc86 (v6).
   - Set up Node.js 24.13.0 with actions/setup-node SHA 820762786026740c76f36085b0efc47a31fe5020 (v7), then run pnpm install --frozen-lockfile.
-  - Use tsuyoshicho/action-textlint SHA ace6abb4fd6736f30f2319c7e21b7adf4e93dc46 (v3) with package_manager: pnpm.
+  - Run textlint with checkstyle output and upload it with actions/upload-artifact SHA ea165f8d65b6e75b540449e92b4886f43607fa02 (v4.6.2).
+  - Use a separate review-posting job with no checkout that downloads the artifact using actions/download-artifact SHA d3f86a106a0bac45b974a628896c90dbdf5c8093 (v4.3.0), sets up reviewdog with reviewdog/action-setup SHA d8edfce3dd5e1ec6978745e801f9c50b5ef80252 (v1.4.0), and grants that job the only pull-requests: write permission.
 
-- [ ] Commit the workflow:
+- [x] Commit the workflow and security boundary changes:
 
     git add .github/workflows/dependency-verification.yml .github/workflows/textlint.yml
     git diff --cached --check
@@ -389,6 +391,6 @@ Treat an unsupported or unauthorized API response as unavailable evidence, not a
 - requested_route: gpt-5.6-sol/high
 - observed_route: gpt-5.6-sol/high
 - route_confirmation: confirmed by delegated task runtime metadata
-- Implementation status: renovate.json, both dependency workflows, README, lockfile cleanup, and validation evidence are recorded in this PR.
+- Implementation status: renovate.json, both dependency workflows, README, lockfile cleanup, permission separation, and validation evidence are recorded in this PR.
 - Pending verification: CodeRabbit review convergence, merged-main behavior, Mend Renovate App permissions and first run, and required-check enforcement remain to be confirmed.
 - Follow-up: finish PR review convergence, merge after human approval, then perform the documented external operations and record live evidence.

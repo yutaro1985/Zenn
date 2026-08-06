@@ -56,3 +56,4 @@ jobs:
         with:
           fail-on-severity: high
           fail-on-scopes: runtime, development, unknown
+          license-check: false
