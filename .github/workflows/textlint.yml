@@ -37,12 +37,31 @@ jobs:
             exit "$status"
           fi
 
+      - name: Set up reviewdog filter
+        if: steps.run-textlint.outcome == 'success'
+        uses: reviewdog/action-setup@d8edfce3dd5e1ec6978745e801f9c50b5ef80252 # v1.4.0
+        with:
+          reviewdog_version: v0.21.0
+
+      - name: Filter textlint findings to changed lines
+        if: steps.run-textlint.outcome == 'success'
+        run: |
+          reviewdog \
+            -f=checkstyle \
+            -name=textlint \
+            -reporter=rdjson \
+            -filter-mode=added \
+            -level=warning \
+            -fail-level=none \
+            < textlint-checkstyle.xml \
+            > textlint-rdjson.json
+
       - name: Upload textlint report
         if: steps.run-textlint.outcome == 'success'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: textlint-checkstyle
-          path: textlint-checkstyle.xml
+          name: textlint-rdjson
+          path: textlint-rdjson.json
           if-no-files-found: error
 
   review-posting:
@@ -58,7 +77,7 @@ jobs:
       - name: Download textlint report
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
-          name: textlint-checkstyle
+          name: textlint-rdjson
           path: artifacts
 
       - name: Set up reviewdog
@@ -71,10 +90,10 @@ jobs:
           REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           reviewdog \
-            -f=checkstyle \
+            -f=rdjson \
             -name=textlint \
             -reporter=github-pr-review \
-            -filter-mode=added \
+            -filter-mode=nofilter \
             -level=warning \
             -fail-level=none \
             < artifacts/textlint-checkstyle.xml
