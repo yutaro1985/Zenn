@@ -210,10 +210,10 @@ The implementation pull request validates the pull request path: both jobs must 
 
 - [x] Update the existing .github/workflows/textlint.yml so package-lock.json removal cannot route it through npm and PR write access is isolated:
 
-  - Check out with actions/checkout SHA d23441a48e516b6c34aea4fa41551a30e30af803 (v6), set persist-credentials to false, and preserve submodules.
+  - Check out with actions/checkout SHA d23441a48e516b6c34aea4fa41551a30e30af803 (v6), fetch the full history for the PR diff, set persist-credentials to false, and preserve submodules.
   - Set up pnpm 9.15.9 with pnpm/action-setup SHA 0977fd99725f1db4007ccb2928dbb4e90d06cc86 (v6).
   - Set up Node.js 24.13.0 with actions/setup-node SHA 820762786026740c76f36085b0efc47a31fe5020 (v7), then run pnpm install --frozen-lockfile.
-  - Run textlint with checkstyle output, filter findings to changed lines with reviewdog in `rdjson` mode, and upload the result with actions/upload-artifact SHA ea165f8d65b6e75b540449e92b4886f43607fa02 (v4.6.2).
+  - Run textlint with checkstyle output, filter findings to changed lines with reviewdog in `rdjson` mode using the PR base-to-merge diff, and upload the result with actions/upload-artifact SHA ea165f8d65b6e75b540449e92b4886f43607fa02 (v4.6.2).
   - Use a separate review-posting job with no checkout that downloads the artifact using actions/download-artifact SHA d3f86a106a0bac45b974a628896c90dbdf5c8093 (v4.3.0), sets up reviewdog with reviewdog/action-setup SHA d8edfce3dd5e1ec6978745e801f9c50b5ef80252 (v1.4.0), posts with `-filter-mode=nofilter`, and grants that job the only pull-requests: write permission.
 
 - [x] Commit the workflow and security boundary changes:

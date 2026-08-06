@@ -97,7 +97,7 @@ license-check: false
 
 これは既存の脆弱性を一括解消するジョブではなく、PR差分による新規のHigh以上脆弱性混入を防ぐゲートである。ライセンス方針はこの導入の対象外とするため、Dependency Reviewのライセンス検査は無効化する。`pnpm audit`は現行baselineが解消されるまで必須jobにしない。
 
-既存の`.github/workflows/textlint.yml`も`package-lock.json`削除後にnpm経路へ戻らないよう、Node.js 24.13.0・pnpm 9.15.9・`pnpm install --frozen-lockfile`を使用する。PRコードをcheckout・実行するtextlint jobは`contents: read`だけにし、checkstyle形式のレポートをreviewdogで差分フィルタした`rdjson` artifactへ変換して保存する。別のreview-posting jobはPRコードをcheckout・実行せず、artifactだけを`-filter-mode=nofilter`で処理してreviewdogでPRレビューを投稿するため、そのjobだけに`pull-requests: write`を付与する。追加するartifactとreviewdogのaction参照も検証済みのfull commit SHAに固定し、リリースタグをコメントで残す。
+既存の`.github/workflows/textlint.yml`も`package-lock.json`削除後にnpm経路へ戻らないよう、Node.js 24.13.0・pnpm 9.15.9・`pnpm install --frozen-lockfile`を使用する。PRコードをcheckout・実行するtextlint jobは`contents: read`だけにし、履歴を使ってPR base SHAから実行中のSHAまでを差分としてreviewdogでcheckstyleレポートをフィルタした`rdjson` artifactへ変換して保存する。別のreview-posting jobはPRコードをcheckout・実行せず、artifactだけを`-filter-mode=nofilter`で処理してreviewdogでPRレビューを投稿するため、そのjobだけに`pull-requests: write`を付与する。追加するartifactとreviewdogのaction参照も検証済みのfull commit SHAに固定し、リリースタグをコメントで残す。
 
 ### 4. Documentation
 
