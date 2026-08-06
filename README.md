@@ -20,6 +20,16 @@
 
    - `pnpm install`
 
+## 依存関係の更新
+
+このリポジトリでは `pnpm` と `pnpm-lock.yaml` を依存管理の正とします。
+
+通常の依存更新と脆弱性修正PRは Renovate が作成します。Renovateを動作させるには、リポジトリの設定ファイルとは別に Mend Renovate App のインストールが必要です。脆弱性修正PRを含め、自動マージは行わず、差分とCI結果を確認して手動でマージします。
+
+`Dependency Verification` workflowは、すべてのPull Requestと `main` へのpushで依存インストールとZenn CLIのsmoke testを実行します。Pull RequestではDependency Reviewも実行し、新たに追加されるHigh以上の脆弱性を検出します。
+
+既存の `pnpm audit` alertとtextlintエラーは、この導入PRの成功条件には含めません。
+
 ## よく使うコマンド
 
 ### プレビュー
