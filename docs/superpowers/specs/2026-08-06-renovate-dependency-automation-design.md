@@ -64,6 +64,14 @@ pnpmを唯一のパッケージマネージャとして扱い、`package-lock.js
 
 `.github/workflows/dependency-verification.yml`を追加する。対象外PRでrequired checkがPendingになることを避けるため、workflow-levelのpath filterは使わず、すべてのPull Requestと`main`へのpushで実行する。
 
+同一PRまたは同一refに対する古い実行を停止するため、workflow-levelで次のconcurrencyを設定する。
+
+```yaml
+concurrency:
+  group: dependency-verification-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+```
+
 権限は次の最小設定にする。
 
 ```yaml
@@ -73,13 +81,13 @@ permissions:
 
 パッケージ検証jobは次の手順を実行する。
 
-1. `actions/checkout@v6`でcheckoutし、`persist-credentials: false`を指定する。
-2. `pnpm/action-setup@v6`でpnpm 9.15.9をセットアップする。
-3. `actions/setup-node@v7`でNode.js 24.13.0をセットアップし、`pnpm-lock.yaml`をキーにpnpm cacheを有効化する。
+1. `actions/checkout`を検証済みのfull commit SHA `d23441a48e516b6c34aea4fa41551a30e30af803`（`v6`）でcheckoutし、`persist-credentials: false`を指定する。
+2. `pnpm/action-setup`を検証済みのfull commit SHA `0977fd99725f1db4007ccb2928dbb4e90d06cc86`（`v6`）で実行し、pnpm 9.15.9をセットアップする。
+3. `actions/setup-node`を検証済みのfull commit SHA `820762786026740c76f36085b0efc47a31fe5020`（`v7`）で実行し、Node.js 24.13.0をセットアップする。`pnpm-lock.yaml`をキーにpnpm cacheを有効化する。
 4. `pnpm install --frozen-lockfile`を実行する。
 5. `pnpm exec zenn --version`を実行する。
 
-Dependency Review jobはPull Requestでのみ実行し、`actions/dependency-review-action@v5`に次を指定する。
+Dependency Review jobはPull Requestでのみ実行し、先に同じcheckoutを行ったうえで、`actions/dependency-review-action`を検証済みのfull commit SHA `a1d282b36b6f3519aa1f3fc636f609c47dddb294`（`v5`）で実行し、次を指定する。
 
 ```yaml
 fail-on-severity: high
@@ -87,6 +95,8 @@ fail-on-scopes: runtime, development, unknown
 ```
 
 これは既存の脆弱性を一括解消するジョブではなく、PR差分による新規のHigh以上脆弱性混入を防ぐゲートである。`pnpm audit`は現行baselineが解消されるまで必須jobにしない。
+
+既存の`.github/workflows/textlint.yml`も`package-lock.json`削除後にnpm経路へ戻らないよう、Node.js 24.13.0・pnpm 9.15.9・`pnpm install --frozen-lockfile`を使用し、`tsuyoshicho/action-textlint`に`package_manager: pnpm`を指定する。変更したaction参照はすべて検証済みのfull commit SHAに固定し、リリースタグをコメントで残す。
 
 ### 4. Documentation
 
@@ -110,11 +120,11 @@ fail-on-scopes: runtime, development, unknown
 
 これらはGitHub repository settingsまたはApp installationへの外部書き込みであり、設定ファイルのPRとは分けて報告する。
 
-Actionsのfull commit SHA固定は供給網リスクをさらに下げられるが、既存workflowもmajor tagを利用しているため、今回のRenovate導入PRでは範囲を広げず、別途検討する。
+ActionsはこのPRで検証済みのfull commit SHAに固定し、Dependabotが更新を検知できるよう各SHAの後ろにリリースタグコメントを残す。将来のaction更新では、タグの変更先を確認してSHAを更新する。
 
 ## Error handling and residual risk
 
-- 既存textlintエラーは依存更新PRの失敗原因にしない。ただしtextlint workflowは既存どおりPRで動作するため、記事変更を含むPRには別の失敗が残る。
+- 既存textlintエラーは依存更新PRの失敗原因にしない。textlint workflowはpnpmのfrozen install後に既存どおりPRレビューを行うため、記事変更を含むPRにはレビュー警告が残る。
 - `pnpm audit`の既存21件はこのIssueでは解消しない。Renovate/Dependabotが作成するPRを別途評価する。
 - `package-lock.json`削除により、既存Dependabot PR #34/#36が不要またはconflictになる可能性があるが、自動クローズしない。
 - `main`のブランチ保護が未設定のため、Dependency Review jobを追加しただけではマージを強制できない。

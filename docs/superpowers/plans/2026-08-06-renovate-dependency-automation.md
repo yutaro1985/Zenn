@@ -10,9 +10,9 @@
 
 ## Global constraints
 
-- Execute only in /private/tmp/Zenn-renovate-dependency-automation.
+- Execute from the repository root in the isolated implementation worktree.
 - Use branch codex/renovate-dependency-automation.
-- Do not modify the unrelated .serena/ in /Users/yutaro.suzuki/Zenn.
+- Do not modify files outside the current worktree or unrelated user changes.
 - Keep pnpm-lock.yaml unchanged; delete only the stale package-lock.json.
 - Do not enable automerge.
 - Do not add workflow-level path filters.
@@ -27,7 +27,8 @@
 - Delete package-lock.json: remove the stale npm lockfile.
 - Create .github/workflows/dependency-verification.yml: install, smoke, and dependency-diff verification.
 - Modify README.md: document pnpm ownership, Renovate behavior, and CI boundaries.
-- Preserve package.json, pnpm-lock.yaml, mise.toml, and .github/workflows/textlint.yml.
+- Preserve package.json, pnpm-lock.yaml, and mise.toml.
+- Modify .github/workflows/textlint.yml so it uses pnpm after package-lock.json removal.
 
 ## Task 1: Confirm the isolated execution boundary
 
@@ -35,7 +36,6 @@ Files: read-only repository inspection.
 
 - [ ] Verify the worktree and branch:
 
-    cd /private/tmp/Zenn-renovate-dependency-automation
     test "$(git branch --show-current)" = "codex/renovate-dependency-automation"
     git status --short --branch
     git worktree list
@@ -83,7 +83,7 @@ Files:
 - [ ] Confirm the validator command exposed by the Renovate package, then run strict validation:
 
     mise x pnpm@9.15.9 -- pnpm --package=renovate@latest dlx renovate-config-validator --help
-    mise x pnpm@9.15.9 -- pnpm --package=renovate@latest dlx renovate-config-validator --strict renovate.json
+    mise x pnpm@9.15.9 -- pnpm --package=renovate@latest dlx renovate-config-validator --strict --no-global renovate.json
 
 If this pnpm dlx form is unsupported by the installed pnpm, inspect pnpm help dlx and use the Renovate package's renovate-config-validator binary; do not substitute an unrelated validator.
 
@@ -133,9 +133,13 @@ Files:
 
     on:
       pull_request:
-      push:
-        branches:
-          - main
+    push:
+      branches:
+        - main
+
+    concurrency:
+      group: dependency-verification-${{ github.event.pull_request.number || github.ref }}
+      cancel-in-progress: true
 
     permissions:
       contents: read
@@ -146,17 +150,17 @@ Files:
         runs-on: ubuntu-latest
         steps:
           - name: Check out repository
-            uses: actions/checkout@v6
+            uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
             with:
               persist-credentials: false
 
           - name: Set up pnpm
-            uses: pnpm/action-setup@v6
+            uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
             with:
               version: 9.15.9
 
           - name: Set up Node.js
-            uses: actions/setup-node@v7
+            uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
             with:
               node-version: 24.13.0
               cache: pnpm
@@ -173,8 +177,13 @@ Files:
         if: github.event_name == 'pull_request'
         runs-on: ubuntu-latest
         steps:
+          - name: Check out repository
+            uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+            with:
+              persist-credentials: false
+
           - name: Review dependency changes
-            uses: actions/dependency-review-action@v5
+            uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5
             with:
               fail-on-severity: high
               fail-on-scopes: runtime, development, unknown
@@ -198,9 +207,16 @@ If the registry lookup does not provide actionlint, record that validation as un
 
 The implementation pull request validates the pull request path: both jobs must run. The first merged main push validates the push path: the workflow and dependency-install-and-smoke run, while dependency-review is skipped by its job-level condition. Do not move the condition to the workflow trigger.
 
+- [ ] Update the existing .github/workflows/textlint.yml so package-lock.json removal cannot route it through npm:
+
+  - Check out with actions/checkout SHA d23441a48e516b6c34aea4fa41551a30e30af803 (v6), set persist-credentials to false, and preserve submodules.
+  - Set up pnpm 9.15.9 with pnpm/action-setup SHA 0977fd99725f1db4007ccb2928dbb4e90d06cc86 (v6).
+  - Set up Node.js 24.13.0 with actions/setup-node SHA 820762786026740c76f36085b0efc47a31fe5020 (v7), then run pnpm install --frozen-lockfile.
+  - Use tsuyoshicho/action-textlint SHA ace6abb4fd6736f30f2319c7e21b7adf4e93dc46 (v3) with package_manager: pnpm.
+
 - [ ] Commit the workflow:
 
-    git add .github/workflows/dependency-verification.yml
+    git add .github/workflows/dependency-verification.yml .github/workflows/textlint.yml
     git diff --cached --check
     git commit -m "ci: verify dependency updates"
 
@@ -254,11 +270,11 @@ Expected from the current lockfile: 0.1.162.
 - [ ] Repeat configuration and workflow validation:
 
     mise x node@24.13.0 -- node -e 'JSON.parse(require("fs").readFileSync("renovate.json", "utf8"))'
-    mise x pnpm@9.15.9 -- pnpm --package=renovate@latest dlx renovate-config-validator --strict renovate.json
+    mise x pnpm@9.15.9 -- pnpm --package=renovate@latest dlx renovate-config-validator --strict --no-global renovate.json
     ruby -e 'require "yaml"; YAML.parse_file(ARGV.fetch(0))' .github/workflows/dependency-verification.yml
     git diff --check
 
-- [ ] Confirm the final file inventory. The only implementation surfaces should be renovate.json, deleted package-lock.json, the new workflow, and README.md, plus the previously approved design and plan documentation:
+- [ ] Confirm the final file inventory. The only implementation surfaces should be renovate.json, deleted package-lock.json, both dependency workflows, and README.md, plus the previously approved design and plan documentation:
 
     git diff --name-status origin/main...HEAD
     git status --short
@@ -361,7 +377,7 @@ Treat an unsupported or unauthorized API response as unavailable evidence, not a
 - Dependabot overlap: duplicate dependency PRs may temporarily occur. Do not auto-close #34/#36; evaluate them after the canonical lockfile change is visible on main.
 - GitHub Actions coverage: Renovate does not update Actions under this configuration. Retain Dependabot security updates.
 - Existing vulnerability baseline: the 21 existing audit findings remain. Track remediation separately and do not weaken Dependency Review.
-- Mutable action tags: major-version action tags remain a supply-chain risk. Full SHA pinning is deferred to a separate change.
+- Action integrity: all action references changed by this implementation are pinned to verified full commit SHAs with release-tag comments. Future action updates require verifying the new tag target before changing the SHA.
 - Lifecycle scripts: frozen installation executes dependency lifecycle scripts on an ephemeral GitHub-hosted runner. Keep permissions at contents: read; if a dependency behaves unexpectedly, block its pull request and investigate before merging.
 - Lockfile deletion: if an actual npm-only consumer is discovered, contain by reverting the lockfile-removal commit and revisiting the package-manager decision.
 - Renovate malfunction or PR flood: disable or suspend the App installation and revert the Renovate configuration commit. Automerge remains disabled, limiting impact.
@@ -369,10 +385,10 @@ Treat an unsupported or unauthorized API response as unavailable evidence, not a
 
 ## Sol execution-plan metadata
 
-- status: completed
+- status: implementation-complete-pr-under-review
 - requested_route: gpt-5.6-sol/high
 - observed_route: gpt-5.6-sol/high
 - route_confirmation: confirmed by delegated task runtime metadata
-- No repository or GitHub writes were performed while authoring this plan.
-- Pending verification: renovate.json and the dependency workflow do not yet exist; App permissions, the first Renovate run, required-check configuration, and merged-main behavior require post-merge evidence.
-- Follow-up: execute this plan in the isolated worktree only after the user approves the plan. Continue with Sol/high review before publication and during pull-request convergence.
+- Implementation status: renovate.json, both dependency workflows, README, lockfile cleanup, and validation evidence are recorded in this PR.
+- Pending verification: CodeRabbit review convergence, merged-main behavior, Mend Renovate App permissions and first run, and required-check enforcement remain to be confirmed.
+- Follow-up: finish PR review convergence, merge after human approval, then perform the documented external operations and record live evidence.
