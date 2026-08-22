@@ -20,6 +20,8 @@ miseの導入、`mise install`や`mise use`、`tools`、`env`、`tasks`の基本
 
 @[card](https://zenn.dev/yutaro1985/articles/mise-beyond-asdf-alternative)
 
+## backendを見る理由
+
 今回は`[tools]`のもう一段下を見ます。`node = "24"`、`"aqua:BurntSushi/ripgrep" = "14"`、`"pipx:httpie" = "3"`は、同じ一行の設定に見えます。取得元も、実際に動くinstallerも違います。
 
 以前は、runtimeごとのversion managerに加えて、`npm install -g`、`pipx install`、`cargo install`を使い分けていました。miseを使い始めたころは、それらを`[tools]`へ寄せられる点が中心でした。現在はregistryと複数のbackend、`mise.lock`があるため、どの経路で取得するかまで設定で選べます。
@@ -39,8 +41,16 @@ miseの導入、`mise install`や`mise use`、`tools`、`env`、`tasks`の基本
 
 たとえば、fixtureで次のように確認しました。
 
-```bash
+```fish
 mise registry ripgrep --json --security
+```
+
+関連する出力の抜粋です。並びは優先順を表します。
+
+```text
+aqua:BurntSushi/ripgrep
+asdf:https://gitlab.com/wt0f/asdf-ripgrep
+cargo:ripgrep
 ```
 
 出力には、優先順で`aqua:BurntSushi/ripgrep`、`asdf:https://gitlab.com/wt0f/asdf-ripgrep`、`cargo:ripgrep`が含まれていました。裸の`ripgrep`は、この同梱registryの優先順から`aqua:BurntSushi/ripgrep`へ解決されます。一方で`"aqua:BurntSushi/ripgrep"`のように完全指定すれば、この対応表を経由しません。
@@ -53,7 +63,7 @@ mise registry ripgrep --json --security
 
 | backend群 | 取得元とinstaller | 外部依存 | `mise.lock`で保持できる主な情報 |
 | --- | --- | --- | --- |
-| core / aqua / GitHub | mise側がproviderごとのdownload、展開、検証を多く担当する | 原則としてaqua CLIは不要。GitHub APIへの到達は必要 | coreはtoolごとに異なる。aquaとGitHubはURL、checksum、sizeなど |
+| core / aqua / GitHub | mise側がproviderごとのdownload、展開、検証を多く担当する | coreはtoolごと。aquaは同梱registryとartifact URLを使う。GitHubは解決時にReleases APIを使う。`--locked`では記録済みasset URLを使える | coreはtoolごとに異なる。aquaとGitHubはURL、checksum、sizeなど |
 | npm / pipx / cargo | package ecosystemを使う | npmは設定次第。pipxは`uv`または`pipx`、cargoは`cargo`が必要 | version中心 |
 | vfox / asdf | pluginがversion解決やinstall手順を提供する | pluginの実装次第 | vfoxは一部のURLやprovenance、asdfはversion中心 |
 | ubi / pkgx | 旧経路または実験的な経路 | backendごとに異なる | 新規の主例には使わない |
@@ -66,13 +76,13 @@ coreは共通のダウンローダではありません。Node.js、Python、Rub
 
 `aqua:`はaqua CLIを呼ぶ薄いwrapperでもありません。miseに同梱されたaqua registryのsnapshotを参照し、mise自身がURLを取得して展開し、checksumを確認します。registry定義の配布物はupstreamにあるため、公開物の可用性までmiseが肩代わりするわけではありません。[^aqua]
 
-`github:`はGitHub Releases APIからrelease assetを選び、miseがdownloadと展開を担います。asset名やplatformの組み合わせが特殊なrepositoryでは、自動選択を読まずに`asset_pattern`などをfixtureで確認する必要があります。[^github]
+`github:`は解決時にGitHub Releases APIからrelease assetを選び、miseがdownloadと展開を担います。URLを含むlockfileで`mise install --locked`を実行する場合は、記録済みのasset URLを使えます。この経路ではregistryやRelease APIを解決に使いません。asset名やplatformの組み合わせが特殊なrepositoryでは、自動選択を読まずに`asset_pattern`などをfixtureで確認する必要があります。[^github]
 
 ### npm、pipx、cargo
 
 backend名と実コマンドが一致するとは限りません。ここは古い記事を読むときにも注意が必要な箇所です。
 
-mise 2026.8.10の`npm:`は、デフォルトの`auto`でmise内蔵のaubeを使います。Node.js、npm、standaloneのaube CLIがPATHにない状態でもpackageをinstallできました。
+mise 2026.8.10の`npm:`は、デフォルトの`auto`でmise内蔵のaubeを使います。Node.js、npm、standaloneのaube CLIがPATHにない状態でもpackageをinstallできました。この内蔵aubeはv2026.7.12で追加された機能です。[^aube-release]
 
 `npm.shell_out = true`やpackage managerを明示した場合は、選んだ外部CLIが必要です。dependencyのlifecycle scriptはデフォルトで抑止されるため、必要なpackageだけ`allow_builds`で許可します。[^npm]
 
@@ -193,9 +203,10 @@ backendのprefixは、取得元の名前だけではありません。どのinst
 [^architecture]: [mise Backend Architecture](https://mise.jdx.dev/dev-tools/backend_architecture)
 [^aqua]: [mise aqua backend](https://mise.jdx.dev/dev-tools/backends/aqua.html)
 [^github]: [mise github backend](https://mise.jdx.dev/dev-tools/backends/github.html)
-[^npm]: [mise npm backend](https://mise.jdx.dev/dev-tools/backends/npm.html)
-[^pipx]: [mise pipx backend](https://mise.jdx.dev/dev-tools/backends/pipx.html)
-[^cargo]: [mise cargo backend](https://mise.jdx.dev/dev-tools/backends/cargo.html)
+[^npm]: [mise npm backend](https://mise.jdx.dev/dev-tools/backends/npm.html)と[npm implementation v2026.8.10](https://github.com/jdx/mise/blob/v2026.8.10/src/backend/npm.rs)
+[^aube-release]: [mise v2026.7.12 release](https://github.com/jdx/mise/releases/tag/v2026.7.12)
+[^pipx]: [mise pipx backend](https://mise.jdx.dev/dev-tools/backends/pipx.html)と[pipx implementation v2026.8.10](https://github.com/jdx/mise/blob/v2026.8.10/src/backend/pipx.rs)
+[^cargo]: [mise cargo backend](https://mise.jdx.dev/dev-tools/backends/cargo.html)と[cargo implementation v2026.8.10](https://github.com/jdx/mise/blob/v2026.8.10/src/backend/cargo.rs)
 [^vfox]: [mise vfox backend](https://mise.jdx.dev/dev-tools/backends/vfox.html)
 [^asdf]: [mise asdf backend](https://mise.jdx.dev/dev-tools/backends/asdf.html)
 [^ubi]: [mise ubi backend](https://mise.jdx.dev/dev-tools/backends/ubi.html)
