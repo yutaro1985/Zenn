@@ -84,9 +84,9 @@ backend名と実コマンドが一致するとは限りません。ここは古�
 
 mise 2026.8.10の`npm:`は、デフォルトの`auto`でmise内蔵のaubeを使います。Node.js、npm、standaloneのaube CLIがPATHにない状態でもpackageをinstallできました。この内蔵aubeはv2026.7.12で追加された機能です。[^aube-release]
 
-`npm.shell_out = true`やpackage managerを明示した場合は、選んだ外部CLIが必要です。dependencyのlifecycle scriptはデフォルトで抑止されるため、必要なpackageだけ`allow_builds`で許可します。[^npm]
+`npm.shell_out = true`では外部のnpmを使います。package managerに明示した`aube`は内蔵の経路です。`aube_cli`、`npm`、`bun`、`pnpm`には、対応する外部CLIが必要です。内蔵aubeではdependencyのlifecycle scriptがデフォルトで抑止されるため、必要なpackageだけ`allow_builds`で許可します。[^npm]
 
-`pipx:`は、PATHに`uv`があれば`uv tool install`を実行します。`uvx`という名前から別の実行ファイルを想像しがちですが、確認した実コマンドは`uv tool install`でした。`uv`がなければ外部の`pipx install`へfallbackします。Pythonのアプリケーション依存ではなく、隔離したPython CLIを置く経路として使います。[^pipx]
+`pipx:`はデフォルト設定で、PATHに`uv`があり、globalまたはtoolごとの設定でuvの使用を無効にしていなければ、`uv tool install`を実行します。`uvx`という名前から別の実行ファイルを想像しがちですが、確認した実コマンドは`uv tool install`でした。それ以外では、外部の`pipx install`へfallbackします。Pythonのアプリケーション依存ではなく、隔離したPython CLIを置く経路として使います。[^pipx]
 
 `cargo:`は外部の`cargo`へ委ねます。`cargo-binstall`が利用可能な設定ではprebuilt binaryを試す経路があります。
 
