@@ -4,7 +4,7 @@
 
 **Goal:** Issue #44の連載第1回として、mise v2026.8.10のbackendがツールをどこから取得し、実際に何を使ってインストールするのかを説明する日本語記事の下書きを作る。
 
-**Architecture:** 既存2記事の基本説明を再掲せず、`tool`、`registry`、`backend`、実際のinstallerを最初に分ける。その後、代表backendの比較と隔離fixtureの実測結果を使い、従来の`tools`/`tasks`と現在のbackend・lockfileを組み合わせた運用例、責任分界、安定度を1本の記事へまとめる。
+**Architecture:** 既存2記事の基本説明を再掲せず、`tool`、`registry`、`backend`、実際のinstallerを最初に分ける。その後、代表backendの比較と、普段のmise設定やcacheと保存先を分けた検証用環境での実測結果を使い、従来の`tools`/`tasks`と現在のbackend・lockfileを組み合わせた運用例、責任分界、安定度を1本の記事へまとめる。
 
 **Tech Stack:** Zenn Markdown、mise 2026.8.10、TOML、fish、pnpm、textlint、Zenn CLI
 
@@ -67,7 +67,7 @@
 
   冒頭で既存2記事をZenn cardとして示し、基本的な`mise install`/`mise use`、`tools`/`env`/`tasks`の説明は既存記事へ委ねる。検証条件として2026-08-23、macOS arm64、mise 2026.8.10を明記し、仕様と実機確認を分けて書く。
 
-  続けて「backendを見る理由」という短い節を置く。従来はruntimeごとのversion managerと`npm install -g`、`pipx install`、`cargo install`のような個別コマンドを組み合わせていたこと、以前のmiseではcore toolやasdf pluginを同じ`[tools]`へ寄せるところが中心だったこと、現在はregistryと複数backend、`mise.lock`により取得経路まで選べるようになったことを順番に書く。この節は歴史の網羅ではなく、同じ`[tools]`の一行でも実際の処理が違うという本題への接続に留める。
+  続けて「backendを見る理由」という短い節を置く。従来はruntimeごとのversion managerと、npm packageとして配布されているCLIの`npm install -g`、Python製CLIのglobalな`pip install`を組み合わせていたこと、以前のmiseではcore toolやasdf pluginを同じ`[tools]`へまとめるところが中心だったこと、現在はregistryと複数backend、`mise.lock`により取得経路まで選べるようになったことを順番に書く。この節は歴史の網羅ではなく、同じ`[tools]`の一行でも実際の処理が違うという本題への接続に留める。
 
 - [ ] **Step 3: 最初に4つの用語を分ける**
 
@@ -84,13 +84,13 @@
 
   coreはproviderごとに実装が違うため、Nodeの`SHASUMS256.txt`確認を例にしつつ全core toolへ一般化しない。aquaはaqua CLIを呼ばず、githubはGitHub Releases APIとassetを使うことを書く。
 
-- [ ] **Step 5: fixtureで確認した3つの具体例を書く**
+- [ ] **Step 5: 検証用環境で確認した3つの具体例を書く**
 
   実測結果を中心に、次の順で書く。
 
   1. `aqua:BurntSushi/ripgrep@14.1.1`では`mise lock`がmacOS arm64向けURLとSHA-256を記録し、`mise install --locked`がchecksum確認後に展開した。
   2. `npm:cowsay@1.6.0`はNode/npm/aube CLIをPATHから外しても内蔵aubeでインストールできたが、実行は`node: not found`で失敗した。`node = "24.13.0"`を従来の`tools`設定へ追加すると動いた。
-  3. `pipx:httpie@3.2.4`はpipx CLIなし・uvありのPATHで`uv tool install httpie==3.2.4`を実行した。対照として`cargo:eza@0.18.18`はcargoなしでは外部`cargo install`を起動できずに失敗した。
+  3. `pipx:httpie@3.2.4`はpipx CLIなし・uvありのPATHで`uv tool install httpie==3.2.4`を実行した。Cargoは使ったことがないため、実機確認の例には含めない。
 
   長いverbose logは貼らず、判断に必要な数行だけコードブロックへ抜き出す。成功例だけでなく期待どおり失敗した例も残し、backendのinstaller依存と導入後runtime依存を分ける。
 
@@ -114,13 +114,13 @@
   run = ["node --version", "rg --version", "http --version"]
   ```
 
-  `tools`で導入経路を選び、`mise.lock`でbackendが対応する範囲を固定し、`tasks`をチーム共通の確認入口にする、という従来機能と追加機能の組み合わせを説明する。`uv`を同じ`[tools]`へ明示することで、`pipx:httpie`が未宣言のglobal uvへ偶然依存しない構成にする。`minimum_release_age`は曖昧なversion解決に効くが、明示pinや全backendの推移依存を守る機能ではないと添える。
+  `tools`で導入経路を選び、`mise.lock`でbackendが対応する範囲を固定する。開発環境がそろっているか、チーム全員が同じtaskで確認できるようにする。`uv`を同じ`[tools]`へ明示することで、`pipx:httpie`が未宣言のglobal uvへ偶然依存しない構成にする。`minimum_release_age`は曖昧なversion解決に効くが、明示pinや全backendの推移依存を守る機能ではないと添える。
 
   この設定は`/private/tmp/mise-backend-combined-20260823`で別々の空のmise data/cache/state/config領域へ2回適用済みである。`mise lock --platform macos-arm64`はNode 24.19.0、uv 0.12.5、ripgrep 14.1.1、HTTPie 3.2.4を解決し、`mise install --locked`と`mise run tool-versions`は2回ともexit 0だった。実測値とlockfileの差は`/private/tmp/mise-backend-fixture-report.md`を参照し、記事のTOMLをこの検証済み設定から変えない。
 
 - [ ] **Step 7: miseへ寄せる責任と残す責任を書く**
 
-  runtimeと独立CLIはmiseの候補にし、アプリケーション依存は`package.json`/`pnpm-lock.yaml`、`pyproject.toml`/`uv.lock`、`Cargo.toml`/`Cargo.lock`へ残す。たとえばプロジェクト固有のPrettierは`npm:prettier`へ移すことを既定の推奨にせず、pnpmのdevDependencyに残す判断を明記する。
+  runtimeと、アプリケーションの依存関係から独立して使うCLIはmiseの`[tools]`で管理する。アプリケーションから読み込むpackageは、`package.json`/`pnpm-lock.yaml`、`pyproject.toml`/`uv.lock`、`go.mod`/`go.sum`など、言語ごとのpackage managerで管理する。Prettier本体とpluginを組み合わせて使うprojectでは、両方をpnpmのdevDependencyへ置き、同じlockfileで管理する例を書く。
 
   `mise.lock`が持つ情報を、aqua/github等のartifact lockと、npm/pipx/cargo/asdfのversion lockに分ける。checksum、provenance、plugin script、package lifecycle script、`trust`は防ぐ対象が違うため「lockfileがあれば安全」とまとめない。
 
