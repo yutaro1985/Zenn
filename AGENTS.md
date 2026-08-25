@@ -10,6 +10,7 @@
 - `.textlintrc`: 日本語校正の設定。
 - `.github/workflows/rules/WEB+DB_PRESS.yml`: `prh` 用の用字用語ルール。
 - `.github/workflows/textlint.yml`: PR時に`textlint`を`reviewdog`で実行するCI。
+- `docs/article-writing-style.md`: 記事の表現、構成、レビューで指摘された言い換えをまとめたガイド。
 - `mise.toml`: `Node.js`/`pnpm`のバージョン管理。
 - `package.json`: `Zenn CLI`と`textlint`の依存関係・`npm scripts`。
 - `.github/copilot-instructions.md`: Copilot向けの同等ガイド。内容を更新する場合は、必要に応じてこちらとの整合性も保つ。
@@ -28,6 +29,7 @@
 
 ## 記事の書き方
 
+- 表現と構成の詳細は`docs/article-writing-style.md`を参照する。
 - 基本構成は「はじめに」→前提・背景→手順→補足やハマりどころ→まとめ。
 - 参考情報や補足は必要に応じて脚注`[^1]`を使う。
 - コマンドやコードはフェンス付きコードブロックを使い、言語名を付ける。
