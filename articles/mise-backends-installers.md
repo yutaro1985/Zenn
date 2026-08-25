@@ -158,7 +158,11 @@ uvx = false
 
 `cargo:` backendにも、`cargo.binstall = false`で`cargo-binstall`ではなく`cargo install`を使う設定があります。自分はCargoを使ったことがないので、ここでは設定があることだけに触れておきます。[^cargo]
 
-Rubyのcore backendでは、`ruby.ruby_install = true`を設定できます。Rubyをsourceからbuildする場合、installerが`ruby-build`から`ruby-install`へ変わります。SPM backendでは、`install_command`でsourceからインストールするときのコマンドを指定できます。ほかにも、precompiled binaryを使うかsourceからbuildするかを決める設定があります。指定できる内容はそれぞれ異なるため、詳細は公式ドキュメントを参照してください。[^install-method-settings]
+Rubyのcore backendでは、`ruby.ruby_install = true`を設定できます。Rubyをsourceからbuildする場合、installerが`ruby-build`から`ruby-install`へ変わります。[^ruby-install]
+
+SPM backendでは、`install_command`でsourceからインストールするときのコマンドを指定できます。[^spm-install-command]
+
+ほかにも、precompiled binaryを使うかsourceからbuildするかを決める設定があります。指定できる内容はそれぞれ異なるため、詳細は公式ドキュメントを参照してください。[^core-compile-settings]
 
 ### vfox、asdf、ubi、pkgx
 
@@ -427,7 +431,9 @@ backendのprefixを明示すると、取得元とinstallerの候補を絞れま�
 [^aube-release]: [mise v2026.7.12 release](https://github.com/jdx/mise/releases/tag/v2026.7.12)
 [^pipx]: [mise pipx backend](https://mise.jdx.dev/dev-tools/backends/pipx.html)と[pipx implementation v2026.8.10](https://github.com/jdx/mise/blob/v2026.8.10/src/backend/pipx.rs)
 [^cargo]: [mise cargo backend](https://mise.jdx.dev/dev-tools/backends/cargo.html)と[cargo backend document v2026.8.10](https://github.com/jdx/mise/blob/v2026.8.10/docs/dev-tools/backends/cargo.md)
-[^install-method-settings]: [mise SPM backend](https://mise.jdx.dev/dev-tools/backends/spm.html)、[SPM backend document v2026.8.10](https://github.com/jdx/mise/blob/v2026.8.10/docs/dev-tools/backends/spm.md#L152-L174)、[Ruby settings v2026.8.10](https://github.com/jdx/mise/blob/v2026.8.10/settings.toml#L2373-L2387)と[Python compile setting v2026.8.10](https://github.com/jdx/mise/blob/v2026.8.10/settings.toml#L2120-L2130)
+[^ruby-install]: [Ruby settings v2026.8.10](https://github.com/jdx/mise/blob/v2026.8.10/settings.toml#L2373-L2387)
+[^spm-install-command]: [mise SPM backend](https://mise.jdx.dev/dev-tools/backends/spm.html)と[SPM backend document v2026.8.10](https://github.com/jdx/mise/blob/v2026.8.10/docs/dev-tools/backends/spm.md#L152-L174)
+[^core-compile-settings]: [Python compile setting v2026.8.10](https://github.com/jdx/mise/blob/v2026.8.10/settings.toml#L2120-L2130)
 [^vfox]: [mise vfox backend](https://mise.jdx.dev/dev-tools/backends/vfox.html)
 [^asdf]: [mise asdf backend](https://mise.jdx.dev/dev-tools/backends/asdf.html)
 [^ubi]: [mise ubi backend](https://mise.jdx.dev/dev-tools/backends/ubi.html)
