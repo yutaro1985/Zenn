@@ -21,7 +21,7 @@
 - 既存の`articles/introduction_of_mise.md`と`articles/mise-beyond-asdf-alternative.md`は変更しない。
 - npm backendの既定installerはmise内蔵aubeであり、Node/npm/aube CLIなしでもインストールできることを書く。ただし、導入したCLIがNodeを実行時に必要とする場合はNodeを別途`[tools]`へ置く必要がある。
 - pipx backendはuvがPATHにあれば`uv tool install`、なければ`pipx install`を使う。Pythonアプリケーションの依存管理とは分ける。
-- cargo backendは外部cargoが必須であり、cargo-binstallの有無と条件で経路が変わる。常にsource buildまたは常にbinary downloadとは書かない。
+- cargo backendは外部のcargoを依存として必要とする。インストール経路は、外部のcargo-binstall、設定で有効にしたmise内蔵のbinary installer、`cargo install`から条件に応じて選ばれる。常にsource buildまたは常にbinary downloadとは書かない。
 - aqua backendはaqua CLIを呼ばず、miseに組み込まれた実装と同梱registry snapshotを使う。github backendもmise自身がrelease assetを処理する。
 - ubiはdeprecated、asdf pluginはlegacy、pkgxはexperimentalとして扱う。vfoxは複雑なinstallerやenv exportが必要なprivate/custom pluginの候補とし、plugin自体のreviewとtrustが必要であること、公式registryへの新規登録ではaqua/githubが優先されることを書く。
 - `mise.lock`のURL/checksum/provenance能力を全backendへ一般化しない。npm、pipx、cargo、asdfはv2026.8.10ではversionのみである。
@@ -32,6 +32,11 @@
 - 対象記事へ`mise exec -- pnpm exec textlint -f stylish articles/mise-backends-installers.md`を実行し、exit 0を得る。
 - frontmatterに`published: false`が1行だけあることを確認し、Zenn CLIでMarkdownを解析して記事一覧へ認識されることを確認する。
 - ローカルコミットまで行い、push、PR作成、Issueの状態変更はしない。
+
+## Follow-up Approvals
+
+- 上記は初稿作成時の制約である。その後のレビューで、記事の表現ガイドを`docs/article-writing-style.md`へ追加し、`AGENTS.md`と`.github/copilot-instructions.md`から参照することが承認された。
+- 2026-08-26に、`published: false`を維持したままDraft PRを作成することが承認された。Issue #44は今後の記事も扱うため、このPRではcloseしない。
 
 ---
 
@@ -92,7 +97,7 @@
   2. `npm:cowsay@1.6.0`はNode/npm/aube CLIをPATHから外しても内蔵aubeでインストールできたが、実行は`node: not found`で失敗した。`node = "24.13.0"`を従来の`tools`設定へ追加すると動いた。
   3. `pipx:httpie@3.2.4`はpipx CLIなし・uvありのPATHで`uv tool install httpie==3.2.4`を実行した。Cargoは使ったことがないため、実機確認の例には含めない。
 
-  長いverbose logは貼らず、判断に必要な数行だけコードブロックへ抜き出す。成功例だけでなく期待どおり失敗した例も残し、backendのinstaller依存と導入後runtime依存を分ける。
+  長いverbose logは貼らず、`rg`で記事に載せる行を抽出する。実行した抽出コマンドと出力をコードブロックへ載せる。成功例だけでなく期待どおり失敗した例も残し、backendのinstaller依存と導入後runtime依存を分ける。
 
 - [ ] **Step 6: 従来機能と組み合わせたプロジェクト例を書く**
 

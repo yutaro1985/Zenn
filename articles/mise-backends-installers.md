@@ -83,7 +83,7 @@ mise registry ripgrep --json --security
 | core | Node.jsやPythonなど、toolごとに用意されたmise内蔵の実装 | 一般backendとは別に記載 |
 | aqua | aqua Registryの定義を読み、miseが配布物を取得、展開し、定義されているchecksumや署名を検証する | registry登録のTier 1 |
 | asdf | asdf pluginのbash scriptをmiseの互換層から実行する | legacy。新規のregistry登録は受け付けない |
-| cargo | `cargo-binstall`または`cargo install`でRust crateを入れる | registry登録のTier 3 |
+| cargo | 外部の`cargo-binstall`、設定で有効にしたmise内蔵のbinary installer、または`cargo install`でRust crateを入れる | registry登録のTier 3 |
 | conda | anaconda.orgから単一のconda packageを直接取得して展開する | registry登録のTier 2 |
 | dotnet | `dotnet tool install`で.NET toolを入れる | registry登録のTier 3 |
 | forgejo | Forgejoのrelease assetをmiseが取得する | Tierの記載なし |
@@ -158,7 +158,7 @@ uvx = false
 
 `cargo:` backendにも、`cargo.binstall = false`で`cargo-binstall`ではなく`cargo install`を使う設定があります。自分はCargoを使ったことがないので、ここでは設定があることだけに触れておきます。[^cargo]
 
-ほかにもSPMや一部のcore runtimeには、artifact bundleやprecompiled binaryを使うか、sourceからbuildするかを決める設定があります。指定できる内容はそれぞれ異なるため、詳細は公式ドキュメントを参照してください。[^install-method-settings]
+Rubyのcore backendでは、`ruby.ruby_install = true`を設定できます。Rubyをsourceからbuildする場合、installerが`ruby-build`から`ruby-install`へ変わります。SPM backendでは、`install_command`でsourceからインストールするときのコマンドを指定できます。ほかにも、precompiled binaryを使うかsourceからbuildするかを決める設定があります。指定できる内容はそれぞれ異なるため、詳細は公式ドキュメントを参照してください。[^install-method-settings]
 
 ### vfox、asdf、ubi、pkgx
 
@@ -232,7 +232,7 @@ verbose logでは、lockfileに記録されたURLからarchiveをdownloadし、c
 Node.js、npm、pnpm、bun、単体のaube CLIをPATHから外した状態で実行しました。
 
 ```fish
-mise install --verbose
+mise install --verbose 2>&1 | rg 'aube: Resolving cowsay@1\.6\.0|Installed 33 packages'
 ```
 
 verbose logには、内蔵aubeを使ったことを示す行が出力されました。
@@ -290,7 +290,7 @@ HTTPieは、APIやHTTP serverの動作確認に使えるPython製のコマンド
 pipx CLIを置かず、uvだけを実行できる状態でインストールしました。
 
 ```fish
-mise install --verbose
+mise install --verbose 2>&1 | rg 'uv tool install httpie==3\.2\.4'
 ```
 
 verbose logには、miseが実行した次のコマンドが記録されました。
@@ -427,7 +427,7 @@ backendのprefixを明示すると、取得元とinstallerの候補を絞れま�
 [^aube-release]: [mise v2026.7.12 release](https://github.com/jdx/mise/releases/tag/v2026.7.12)
 [^pipx]: [mise pipx backend](https://mise.jdx.dev/dev-tools/backends/pipx.html)と[pipx implementation v2026.8.10](https://github.com/jdx/mise/blob/v2026.8.10/src/backend/pipx.rs)
 [^cargo]: [mise cargo backend](https://mise.jdx.dev/dev-tools/backends/cargo.html)と[cargo backend document v2026.8.10](https://github.com/jdx/mise/blob/v2026.8.10/docs/dev-tools/backends/cargo.md)
-[^install-method-settings]: [mise SPM backend](https://mise.jdx.dev/dev-tools/backends/spm.html)と[mise Settings](https://mise.jdx.dev/configuration/settings.html)
+[^install-method-settings]: [mise SPM backend](https://mise.jdx.dev/dev-tools/backends/spm.html)、[SPM backend document v2026.8.10](https://github.com/jdx/mise/blob/v2026.8.10/docs/dev-tools/backends/spm.md#L152-L174)、[Ruby settings v2026.8.10](https://github.com/jdx/mise/blob/v2026.8.10/settings.toml#L2373-L2387)と[Python compile setting v2026.8.10](https://github.com/jdx/mise/blob/v2026.8.10/settings.toml#L2120-L2130)
 [^vfox]: [mise vfox backend](https://mise.jdx.dev/dev-tools/backends/vfox.html)
 [^asdf]: [mise asdf backend](https://mise.jdx.dev/dev-tools/backends/asdf.html)
 [^ubi]: [mise ubi backend](https://mise.jdx.dev/dev-tools/backends/ubi.html)
