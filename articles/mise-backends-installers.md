@@ -22,11 +22,11 @@ miseの導入、`mise install`や`mise use`、`tools`、`env`、`tasks`の基本
 
 ## backendを見る理由
 
-今回は`[tools]`のもう一段下を見ます。`node = "24"`、`"aqua:BurntSushi/ripgrep" = "14"`、`"pipx:httpie" = "3"`は、同じ一行の設定に見えます。取得元も、実際に動くinstallerも違います。
+miseの`[tools]`は、runtimeだけでなく普段使うCLIもまとめて管理できます。自分も以前はruntimeごとのversion managerに加えて、`npm install -g`、`pipx install`、`cargo install`を使い分けていました。miseを使い始めたころは、それらを`[tools]`へ寄せられるところを便利に感じていました。
 
-以前は、runtimeごとのversion managerに加えて、`npm install -g`、`pipx install`、`cargo install`を使い分けていました。miseを使い始めたころは、それらを`[tools]`へ寄せられる点が中心でした。現在はregistryと複数のbackend、`mise.lock`があるため、どの経路で取得するかまで設定で選べます。
+ただ、`[tools]`に書いて`mise install`を実行したときに、その裏でどうやってインストールしているのかは、あまり意識していませんでした。あらためてドキュメントを読んでみると、runtimeやCLIによって経路が違い、必要な外部コマンドも変わります。
 
-この記事で伝えたいのは、backend名から処理を想像しないことです。使うCLIの配布元、installerが必要とする外部コマンド、lockfileが残せる情報を分けて確認すると、設定をレビューしやすくなります。
+そこで今回は、backendごとにどこから情報や配布物を取得し、実際には何を使ってインストールしているのかを確認してみます。`mise.lock`に何が残るのかも合わせて見ていきます。
 
 ## 用語の整理
 
@@ -176,7 +176,7 @@ lockfileにはNode.jsとripgrepのURLとchecksumが残りました。uvではURL
 
 ## miseへ寄せる範囲
 
-私はruntimeと、repositoryをまたいで使う開発CLIを`[tools]`の候補にしています。一方でアプリケーション依存は、それぞれのpackage managerへ残します。
+自分はruntimeと、repositoryをまたいで使う開発CLIを`[tools]`の候補にしています。一方でアプリケーション依存は、それぞれのpackage managerへ残します。
 
 | 対象 | 主な置き場所 |
 | --- | --- |
