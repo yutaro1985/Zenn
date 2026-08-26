@@ -233,10 +233,16 @@ verbose logでは、lockfileに記録されたURLからarchiveをdownloadし、c
 "npm:cowsay" = "1.6.0"
 ```
 
-Node.js、npm、pnpm、bun、単体のaube CLIをPATHから外した状態で実行しました。
+Node.js、npm、pnpm、bun、単体のaube CLIをPATHから外した状態で実行し、verbose logをファイルへ保存しました。
 
 ```shell
-mise install --verbose 2>&1 | rg 'aube: Resolving cowsay@1\.6\.0|Installed 33 packages'
+mise install --verbose > /tmp/mise-npm-install.log 2>&1
+```
+
+`mise install`が成功したことを確認した後、保存したlogから必要な行を`rg`で抜き出しました。
+
+```shell
+rg 'aube: Resolving cowsay@1\.6\.0|Installed 33 packages' /tmp/mise-npm-install.log
 ```
 
 verbose logには、内蔵aubeを使ったことを示す行が出力されました。
@@ -291,10 +297,16 @@ HTTPieは、APIやHTTP serverの動作確認に使えるPython製のコマンド
 "pipx:httpie" = "3.2.4"
 ```
 
-pipx CLIを置かず、uvだけを実行できる状態でインストールしました。
+pipx CLIを置かず、uvだけを実行できる状態でインストールし、verbose logをファイルへ保存しました。
 
 ```shell
-mise install --verbose 2>&1 | rg 'uv tool install httpie==3\.2\.4'
+mise install --verbose > /tmp/mise-pipx-install.log 2>&1
+```
+
+`mise install`が成功したことを確認した後、保存したlogから必要な行を`rg`で抜き出しました。
+
+```shell
+rg 'uv tool install httpie==3\.2\.4' /tmp/mise-pipx-install.log
 ```
 
 verbose logには、miseが実行した次のコマンドが記録されました。
