@@ -10,6 +10,7 @@
 - `.textlintrc`: 日本語校正の設定。
 - `.github/workflows/rules/WEB+DB_PRESS.yml`: `prh` 用の用字用語ルール。
 - `.github/workflows/textlint.yml`: PR時に`textlint`を`reviewdog`で実行するCI。
+- `docs/article-writing-style.md`: 記事の表現、構成、レビューで指摘された言い換えをまとめたガイド。
 - `mise.toml`: `Node.js`/`pnpm`のバージョン管理。
 - `package.json`: `Zenn CLI`と`textlint`の依存関係・`npm scripts`。
 - `.github/copilot-instructions.md`: Copilot向けの同等ガイド。内容を更新する場合は、必要に応じてこちらとの整合性も保つ。
@@ -20,14 +21,16 @@
 - 既存記事の文体・構成に寄せて編集する。
 - 変更は依頼範囲に限定し、無関係な表現調整は広げない。
 - `:::message` や `:::message alert` は意味がある限り維持する。
-- コマンド例はmacOSとfishを前提にする。
-- fish前提のため、複数行の入力例では`heredoc`を避け、必要に応じて`printf`や`echo`で代替する。
+- コマンド例は原則としてmacOSでの実行を前提にする。bash、zsh、fishで同じように実行できるコマンドは、コードフェンスを`shell`にする。
+- shell固有の構文を使う場合は、実際のshell名をコードフェンスに指定する。書き方が異なる場合は、読者が実行するために必要なものだけ併記する。
+- 実機確認に使ったshellは本文へ記載する。fishで実行する複数行の入力例では`heredoc`を避け、必要に応じて`printf`や`echo`で代替する。
 - JavaScript系のローカル実行は`npx`より`pnpm exec`を優先する。
 - `Node.js`/`pnpm`は`mise.toml`の指定を前提にし、必要に応じて`mise install`を案内する。
 - 依存関係を変更する場合は`pnpm`を使い、`npm`実行により不要な`package-lock.json`を生成しない。
 
 ## 記事の書き方
 
+- 表現と構成の詳細は`docs/article-writing-style.md`を参照する。
 - 基本構成は「はじめに」→前提・背景→手順→補足やハマりどころ→まとめ。
 - 参考情報や補足は必要に応じて脚注`[^1]`を使う。
 - コマンドやコードはフェンス付きコードブロックを使い、言語名を付ける。
