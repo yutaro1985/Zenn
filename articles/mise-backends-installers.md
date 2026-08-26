@@ -41,7 +41,7 @@ miseの`[tools]`は、runtimeだけでなく普段使うCLIもまとめて管理
 
 まず、`ripgrep`という短縮名がどのbackendへ解決されるのかを確認します。普段使っている設定やcacheに残っている情報を拾わないように、miseのdata、cache、state、config用directoryを空の場所へ分けて実行しました。
 
-```fish
+```shell
 mise registry ripgrep --json --security
 ```
 
@@ -74,9 +74,9 @@ mise registry ripgrep --json --security
 
 ## backendの一覧
 
-公式ドキュメントのBackendsには、18種類のbackendが載っています。これとは別に、Node.jsやPythonなどをmise内蔵の実装で扱うcore backendと、pluginとして追加するcustom backendがあります。[^backends]
+公式ドキュメントのBackendsには、custom backendを含む19種類のbackendが載っています。これとは別に、Node.jsやPythonなどをmise内蔵の実装で扱うcore backendがあります。[^backends]
 
-最初に、公式ドキュメントに載っているbackendを一覧で確認します。そのあと、自分がこれまで使うことの多かったnpmとpipに関係する経路を中心に、実際に何が動くのかを見ていきます。aquaは自分の過去の利用状況とは別に、registryへtoolを新しく登録するときのTier 1として扱われているため取り上げます。
+最初に、公式ドキュメントに載っている19種類とcore backendを一覧で確認します。そのあと、自分がこれまで使うことの多かったnpmとpipに関係する経路を中心に、実際に何が動くのかを見ていきます。aquaは自分の過去の利用状況とは別に、registryへtoolを新しく登録するときのTier 1として扱われているため取り上げます。
 
 | backend | 何を使ってインストールするのか | 公式ドキュメント上の扱い |
 | --- | --- | --- |
@@ -190,7 +190,7 @@ lockfile = true
 
 自分の環境に合わせて、macOS arm64用のlock情報を生成します。
 
-```fish
+```shell
 mise lock --platform macos-arm64
 ```
 
@@ -211,7 +211,7 @@ url_api = "https://api.github.com/repos/BurntSushi/ripgrep/releases/assets/19135
 
 続けて、lockfileを使ってインストールし、versionを確認しました。
 
-```fish
+```shell
 mise install --locked --verbose
 mise exec -- rg --version | head -n 1
 ```
@@ -235,7 +235,7 @@ verbose logでは、lockfileに記録されたURLからarchiveをdownloadし、c
 
 Node.js、npm、pnpm、bun、単体のaube CLIをPATHから外した状態で実行しました。
 
-```fish
+```shell
 mise install --verbose 2>&1 | rg 'aube: Resolving cowsay@1\.6\.0|Installed 33 packages'
 ```
 
@@ -248,7 +248,7 @@ Installed 33 packages
 
 インストールは成功しましたが、同じPATHのまま実行するとNode.jsがないため失敗します。
 
-```fish
+```shell
 mise exec -- cowsay hello
 ```
 
@@ -264,7 +264,7 @@ node = "24.13.0"
 "npm:cowsay" = "1.6.0"
 ```
 
-```fish
+```shell
 mise install
 mise exec -- cowsay hello
 ```
@@ -293,7 +293,7 @@ HTTPieは、APIやHTTP serverの動作確認に使えるPython製のコマンド
 
 pipx CLIを置かず、uvだけを実行できる状態でインストールしました。
 
-```fish
+```shell
 mise install --verbose 2>&1 | rg 'uv tool install httpie==3\.2\.4'
 ```
 
@@ -305,7 +305,7 @@ uv tool install httpie==3.2.4
 
 インストール後にHTTPieのversionを確認します。
 
-```fish
+```shell
 mise exec -- http --version
 ```
 
@@ -341,7 +341,7 @@ run = ["node --version", "rg --version", "http --version"]
 
 この`mise.toml`を空のdata、cache、state、config用directoryで2回試しました。最初に次のコマンドを実行しています。
 
-```fish
+```shell
 mise tasks validate
 mise lock --platform macos-arm64
 mise install --locked
@@ -422,7 +422,7 @@ backendのprefixを明示すると、取得元とinstallerの候補を絞れま�
 
 [^registry]: [mise Registry](https://mise.jdx.dev/registry.html)と[Registry document v2026.8.10](https://github.com/jdx/mise/blob/v2026.8.10/docs/registry.md)
 [^ripgrep-registry]: [mise v2026.8.10のripgrep registry entry](https://github.com/jdx/mise/blob/v2026.8.10/registry/ripgrep.toml)
-[^backends]: [mise Backends](https://mise.jdx.dev/dev-tools/backends/)
+[^backends]: [mise Backends](https://mise.jdx.dev/dev-tools/backends/)と[Backends document v2026.8.10](https://github.com/jdx/mise/blob/v2026.8.10/docs/dev-tools/backends/index.md)
 [^architecture]: [mise Backend Architecture](https://mise.jdx.dev/dev-tools/backend_architecture)
 [^aqua]: [mise aqua backend](https://mise.jdx.dev/dev-tools/backends/aqua.html)と[aqua backend document v2026.8.10](https://github.com/jdx/mise/blob/v2026.8.10/docs/dev-tools/backends/aqua.md)
 [^github]: [mise github backend](https://mise.jdx.dev/dev-tools/backends/github.html)と[github backend implementation v2026.8.10](https://github.com/jdx/mise/blob/v2026.8.10/src/backend/github.rs)

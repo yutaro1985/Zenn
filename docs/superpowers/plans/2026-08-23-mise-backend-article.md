@@ -26,7 +26,7 @@
 - ubiはdeprecated、asdf pluginはlegacy、pkgxはexperimentalとして扱う。vfoxは複雑なinstallerやenv exportが必要なprivate/custom pluginの候補とし、plugin自体のreviewとtrustが必要であること、公式registryへの新規登録ではaqua/githubが優先されることを書く。
 - `mise.lock`のURL/checksum/provenance能力を全backendへ一般化しない。npm、pipx、cargo、asdfはv2026.8.10ではversionのみである。
 - `minimum_release_age`、`trust`、Safe mode、install scriptは安全性・再現性編で詳しく扱うため、本記事ではbackend選択に必要な最低限に留める。
-- コマンド例はmacOSとfishを前提にし、複数行のshell入力でheredocを使わない。
+- 実機確認はmacOSとfishで行う。bash、zsh、fishで同じように実行できるコマンドのコードフェンスは`shell`とし、fish固有の構文を使う場合だけ`fish`とする。複数行のshell入力でheredocを使わない。
 - 日本語は既存記事の一人称と温度感へ寄せ、命題型H2、過剰な二項対比、主体のない抽象文、同じ長さの段落、AI偏愛語を避ける。
 - 記事内の外部リンクは公式miseドキュメント、jdx/miseのタグ固定ソース、既存のZenn記事を中心にする。
 - 対象記事へ`mise exec -- pnpm exec textlint -f stylish articles/mise-backends-installers.md`を実行し、exit 0を得る。
@@ -151,7 +151,7 @@
 
   Run:
 
-  ```bash
+  ```shell
   mise exec -- pnpm exec textlint -f stylish articles/mise-backends-installers.md
   ```
 
@@ -159,15 +159,35 @@
 
   Run:
 
-  ```bash
-  rg -n '^published: false$' articles/mise-backends-installers.md
+  ```shell
+  awk '
+    NR == 1 && $0 == "---" {
+      in_frontmatter = 1
+      next
+    }
+    in_frontmatter && $0 == "---" {
+      in_frontmatter = 0
+      next
+    }
+    in_frontmatter && $0 == "published: false" {
+      frontmatter_count++
+    }
+    $0 == "published: false" {
+      total_count++
+    }
+    END {
+      print "frontmatter_count=" frontmatter_count
+      print "total_count=" total_count
+      exit !(frontmatter_count == 1 && total_count == 1)
+    }
+  ' articles/mise-backends-installers.md
   ```
 
-  Expected: frontmatter内の1行だけがmatchする。
+  Expected: `frontmatter_count=1`、`total_count=1`、exit 0。
 
   Run:
 
-  ```bash
+  ```shell
   mise exec -- pnpm exec zenn list:articles
   ```
 
@@ -177,16 +197,19 @@
 
   Run:
 
-  ```bash
+  ```shell
   git diff --check
   git diff -- articles/mise-backends-installers.md
+  git diff --exit-code origin/main -- \
+    articles/introduction_of_mise.md \
+    articles/mise-beyond-asdf-alternative.md
   ```
 
-  Expected: whitespace errorなし。既存記事や公開設定の変更なし。
+  Expected: whitespace errorなし。記事の差分が意図した内容だけであり、既存2記事の差分はない。
 
   Commit:
 
-  ```bash
+  ```shell
   git add articles/mise-backends-installers.md
   git commit -m "docs(mise): draft backend installer article"
   ```
