@@ -6,7 +6,7 @@ topics: ["mise", "python", "uv", "pnpm", "githubactions"]
 published: false
 ---
 
-この記事では、チーム開発でrepositoryをcloneした後に必要なtoolのインストールと依存packageの準備を、miseから実行する方法を確認します。例として、Pythonの依存packageをuv、Prettierをpnpmで管理するrepositoryを用意し、GitHub Actionsからも同じmise taskを実行します。
+この記事では、チーム開発でrepositoryをcloneした後に必要なtoolのインストールと依存packageの準備を、miseから実行する方法を確認します。例として、Pythonの依存packageをuv、Prettierをpnpmで管理するrepositoryを用意します。同じmise taskを呼び出すGitHub Actionsのworkflowも書きます。
 
 手元での確認は、2026-08-26にmacOS arm64上で、fish 3.7.1とmise 2026.8.14を使って行いました。この検証では、普段のglobal設定やcacheの影響を避けるため、保存先を一時directoryへ変更しています。これは記事の検証時だけに行った設定であり、通常の初期セットアップには必要ありません。Linux用のlock情報も生成しましたが、Linux上でのインストールとGitHub Actionsの実行までは確認していません。
 
@@ -16,7 +16,7 @@ published: false
 
 開発プロジェクトへ参加するときは、まずGitHubからrepositoryをcloneし、手元に開発環境を用意します。使用するruntimeやpackage managerが増えると、それぞれのversionを合わせ、依存packageをインストールする必要があります。
 
-この初期セットアップをmiseから実行し、チームの開発者が同じコマンドを使えるようにします。GitHub Actionsでも同じmise taskを使います。
+この初期セットアップをmiseから実行し、チームの開発者が同じコマンドを使えるようにします。GitHub Actionsから同じmise taskを呼び出す方法も確認します。
 
 前の記事では、miseがtoolをインストールするときに使うbackendを確認しました。記事の最後では、runtimeや独立したCLIを`mise.toml`と`mise.lock`で管理する例も載せています。
 
@@ -58,7 +58,7 @@ repositoryへ置くファイルは次のとおりです。
 | FastAPI、Uvicorn、pytest、Ruff | `pyproject.toml` | `uv.lock` |
 | Prettier | `package.json` | `pnpm-lock.yaml` |
 
-`[tools]`へ書くpnpmは、Node.jsのpackageをインストールするためのpackage managerです。Prettier本体はこのプロジェクトで使うNode.jsのpackageです。`npm:prettier`としてmiseへ直接インストールせず、`package.json`へ書きます。
+`[tools]`へ書くpnpmは、npm packageをインストールするためのpackage managerです。Prettierもnpm packageとして配布されています。今回は`npm:prettier`としてmiseへ直接インストールせず、`package.json`へ書きます。
 
 アプリケーションのコードは、`/health`へアクセスすると固定のJSONを返すだけです。
 
@@ -132,7 +132,7 @@ target-version = "py313"
 
 アプリケーションが実行時に使うFastAPIとUvicornは`dependencies`へ、開発時に使うpytestとRuffは`dependency-groups.dev`へ書いています。実際にインストールするversionは`uv.lock`へ記録します。
 
-### Node.js製のPrettier
+### pnpmで管理するPrettier
 
 `package.json`は次の内容です。
 
@@ -140,7 +140,6 @@ target-version = "py313"
 {
   "name": "mise-team-example",
   "private": true,
-  "packageManager": "pnpm@10.34.5",
   "scripts": {
     "format:check": "prettier --check README.md package.json"
   },
@@ -149,6 +148,8 @@ target-version = "py313"
   }
 }
 ```
+
+pnpmのversionは`mise.toml`と`mise.lock`で管理するため、`package.json`には`packageManager`を書いていません。pnpm 10では、`packageManager`に指定したpnpmを自動でダウンロードして実行する設定がデフォルトで有効です。両方へversionを書くと更新箇所が増えるため、今回はmise側だけで管理します。[^pnpm-settings]
 
 Prettierはアプリケーションの実行には使わないため、`devDependencies`へ入れます。format対象のファイルも`package.json`の`scripts`へ書き、miseからは`pnpm --silent run format:check`を呼び出します。Prettierを実行するscriptを`package.json`に残しておけば、設定を変更するときに確認する場所が分かりやすくなります。
 
@@ -171,8 +172,11 @@ uv = "0.12"
 pnpm = "10"
 node = "24"
 
+[env]
+UV_PYTHON = { value = "{{ tools.python.path }}", tools = true }
+
 [tasks.setup]
-description = "PythonとNode.jsの依存packageをインストールする"
+description = "uvとpnpmで依存packageをインストールする"
 run = [
   "uv sync --locked",
   "pnpm install --frozen-lockfile",
@@ -198,6 +202,8 @@ depends = ["lint", "test"]
 
 `[settings]`の`lockfile = true`は、`mise.lock`の生成と更新を有効にします。`[tool_config]`の`locked = true`は、このconfig rootで宣言するtoolにlockfileを必須とします。`mise.local.toml`へ個人用toolを書いた場合は、`mise.local.lock`が対応します。lockfileの設定については公式ドキュメントにも説明があります。[^mise-lock]
 
+`UV_PYTHON`には、miseでインストールしたPythonのパスを設定します。uvは同じversionのPythonを自分で管理している場合や、systemにインストール済みの場合も検出します。この設定を入れておけば、`uv sync`は`mise.lock`に記録したPythonを使って`.venv`を作成します。miseのPython向けドキュメントにも同じ設定例があります。[^mise-python]
+
 `setup`では、uvとpnpmのlockfileを変更せずに依存packageをインストールします。uvの`--locked`は`uv.lock`が古い場合に失敗し、pnpmの`--frozen-lockfile`は`pnpm-lock.yaml`が`package.json`と合っていない場合に失敗します。[^uv-sync][^pnpm-install]
 
 `check`は`lint`と`test`を実行します。ローカルとCIで`mise run check`を使うため、確認内容をGitHub ActionsのYAMLへ重ねて書かずに済みます。taskの定義方法や`depends`の詳しい動作は、miseのTask Configurationを参照してください。[^task-configuration]
@@ -212,7 +218,7 @@ depends = ["lint", "test"]
 mise lock --platform macos-arm64,linux-x64
 ```
 
-PythonとNode.jsの依存packageにも、それぞれのpackage managerでlockfileを作ります。
+Pythonの依存packageとPrettierにも、それぞれのpackage managerでlockfileを作ります。
 
 ```shell
 mise install
@@ -223,7 +229,7 @@ mise exec -- pnpm install --lockfile-only
 生成された`mise.lock`は63行でした。全体を掲載する代わりに、次のコマンドでtool、確定したversion、backend、platformの見出しを取り出しました。
 
 ```shell
-rg '^(lockfile_version|\[\[tools\.|version =|backend =|\[tools\..*platforms\.)' mise.lock
+grep -E '^(lockfile_version|\[\[tools\.|version =|backend =|\[tools\..*platforms\.)' mise.lock
 ```
 
 ```text
@@ -268,7 +274,7 @@ backend = "aqua:astral-sh/uv"
 | --- | --- |
 | `mise.lock` | Python 3.13.15、uv 0.12.5、pnpm 10.34.5、Node.js 24.19.0とplatformごとの配布物 |
 | `uv.lock` | FastAPI、Uvicorn、pytest、Ruffと、それらが利用するPython package |
-| `pnpm-lock.yaml` | PrettierとNode.js packageの解決結果 |
+| `pnpm-lock.yaml` | Prettierと、それが利用するnpm packageの解決結果 |
 
 `mise.lock`だけではアプリケーションの依存packageまで固定されません。反対に、`uv.lock`と`pnpm-lock.yaml`だけでは、実行に使うPython、uv、Node.js、pnpmのversionまではそろいません。
 
@@ -332,10 +338,10 @@ mise run setup
 mise run check > /tmp/mise-run-check.log 2>&1
 ```
 
-どちらのコマンドも成功しました。`mise run check`のlogから、Ruff、pytest、Prettierの結果を`rg`で取り出します。
+どちらのコマンドも成功しました。`mise run check`のlogから、Ruff、pytest、Prettierの結果を`grep`で取り出します。
 
 ```shell
-rg 'All checks passed!|[0-9]+ passed in|All matched files use Prettier code style!' /tmp/mise-run-check.log
+grep -E 'All checks passed!|[0-9]+ passed in|All matched files use Prettier code style!' /tmp/mise-run-check.log
 ```
 
 ```text
@@ -397,7 +403,7 @@ mise 2026.8.14で生成すると、`MISE_EXPERIMENTAL: true`と`jdx/mise-action@
 
 ## 個人ごとの値を追加する場合
 
-今回のFastAPIアプリケーションには、個人ごとに変わる設定やsecretはありません。そのため、ここまでの`mise.toml`には`[env]`を書いていません。
+今回のFastAPIアプリケーションには、個人ごとに変わる設定やsecretはありません。`mise.toml`の`[env]`にはuvが使うPythonのパスだけを書き、個人ごとに変わる値は入れていません。
 
 あとから外部APIを使う機能を追加し、開発用serverの起動時にtokenが必要になった場合は、taskへ`required`と`redact`を指定できます。次の構文は`mise tasks validate`で確認しましたが、今回のアプリケーションでは実行していません。
 
@@ -425,6 +431,8 @@ secretの扱いは確認することが多いため、別の記事でもう少�
 miseには、directoryへ入ったときやtoolをインストールした後にコマンドを実行するhookがあります。`mise run setup`をhookから自動実行することも考えられますが、今回は明示的なtaskとして残しました。
 
 `enter`や`cd`のhookは、shellでmiseをactivateしていないと実行されません。ここでいうactivateは、`mise activate`が出力するshell用の設定を読み込み、directoryの移動に合わせてmiseが環境変数やhookを更新できる状態にすることです。[^activate]
+
+今回の手順ではhookを使わないため、次のactivate設定は必要ありません。hookを使う場合は、使用しているshellに合わせて設定します。
 
 macOSのデフォルトであるzshでは、次の行を`~/.zshrc`へ追加します。
 
@@ -514,6 +522,7 @@ Pull Requestでは、変更した設定と対応するlockfileを一緒に確認
   MISE_PYTHON_DEFAULT_PACKAGES_FILE=/dev/null \
   XDG_CONFIG_HOME=/tmp/mise-team-verification/xdg-config \
   XDG_CACHE_HOME=/tmp/mise-team-verification/xdg-cache \
+  XDG_DATA_HOME=/tmp/mise-team-verification/xdg-data \
   XDG_STATE_HOME=/tmp/mise-team-verification/xdg-state \
   UV_CACHE_DIR=/tmp/mise-team-verification/uv-cache \
   NPM_CONFIG_USERCONFIG=/dev/null \
@@ -529,17 +538,19 @@ Pull Requestでは、変更した設定と対応するlockfileを一緒に確認
 
 今回は、Pythonの依存packageをuv、Prettierをpnpmで管理するプロジェクトを例に、repositoryへ何を置き、clone後とCIでどのコマンドを実行するかを確認しました。
 
-repositoryをcloneした後は、`mise install`、`mise run setup`、`mise run check`の順に実行します。GitHub Actionsのworkflowにも同じtaskを書けば、Ruff、pytest、PrettierのコマンドをYAMLへ重ねて書かずに済みます。今回はactionlintによる構文確認だけです。GitHub Actions runnerでの実行は確認していません。
+repositoryをcloneした後は、`mise install`、`mise run setup`、`mise run check`の順に実行します。GitHub Actionsのworkflowからも同じtaskを呼び出せば、Ruff、pytest、PrettierのコマンドをYAMLへ重ねて書かずに済みます。今回はactionlintによる構文確認だけです。GitHub Actions runnerでの実行は確認していません。
 
-`mise.lock`、`uv.lock`、`pnpm-lock.yaml`は、同じものを固定しているわけではありません。toolのversionと配布物、Pythonの依存package、Node.jsの依存packageをそれぞれ記録しています。この違いを前の記事で確認したbackendと合わせて見ると、どのファイルを更新すればよいのか判断しやすくなりました。
+`mise.lock`、`uv.lock`、`pnpm-lock.yaml`は、同じものを固定しているわけではありません。toolのversionと配布物、Pythonの依存package、Prettierとその依存packageをそれぞれ記録しています。この違いを前の記事で確認したbackendと合わせて見ると、どのファイルを更新すればよいのか判断しやすくなりました。
 
 次は、taskどうしの依存関係、並列実行、ファイル監視など、miseをタスク実行基盤として使う場合をもう少し詳しく確認する予定です。
 
 [^mise-lock]: [Lockfiles | mise-en-place](https://mise.jdx.dev/dev-tools/mise-lock.html)
 [^uv-sync]: [Locking and syncing | uv](https://docs.astral.sh/uv/concepts/projects/sync/)
 [^pnpm-install]: [pnpm install | pnpm](https://pnpm.io/cli/install)
+[^pnpm-settings]: [Settings: managePackageManagerVersions | pnpm 10.x](https://pnpm.io/10.x/settings#managepackagemanagerversions)
 [^task-configuration]: [Task Configuration | mise-en-place](https://mise.jdx.dev/tasks/task-configuration.html)
 [^mise-node]: [Node | mise-en-place](https://mise.jdx.dev/lang/node.html)
+[^mise-python]: [Python: mise & uv | mise-en-place](https://mise.jdx.dev/lang/python.html#mise-uv)
 [^trust]: [mise trust | mise-en-place](https://mise.jdx.dev/cli/trust.html)
 [^activate]: [mise activate | mise-en-place](https://mise.jdx.dev/cli/activate.html)
 [^task-validate]: [mise tasks validate | mise-en-place](https://mise.jdx.dev/cli/tasks/validate.html)
