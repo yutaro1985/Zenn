@@ -218,6 +218,8 @@ depends = ["lint", "test"]
 mise lock --platform macos-arm64,linux-x64
 ```
 
+この例の`mise.lock`に含めたplatformは、macOS arm64とLinux x64だけです。ほかのplatformを使う開発者がいる場合は、必要なplatformを`--platform`へ追加してlockfileを更新します。[^mise-lock]
+
 Pythonの依存packageとPrettierにも、それぞれのpackage managerでlockfileを作ります。
 
 ```shell
@@ -279,6 +281,8 @@ backend = "aqua:astral-sh/uv"
 `mise.lock`だけではアプリケーションの依存packageまで固定されません。反対に、`uv.lock`と`pnpm-lock.yaml`だけでは、実行に使うPython、uv、Node.js、pnpmのversionまではそろいません。
 
 ## 新しい環境での準備と確認
+
+ここではmise CLIをインストール済みで、`mise`コマンドを実行できることを前提にします。インストールしていない場合は、公式のGetting Startedを参照してください。[^mise-getting-started]
 
 ここまでに作成したファイルをrepositoryへcommitしたあと、新しい開発環境を準備する流れは次のとおりです。
 
@@ -380,6 +384,8 @@ jobs:
       - run: mise run setup
       - run: mise run check
 ```
+
+`jdx/mise-action`の`version`は指定していないため、CIでは実行時点の最新releaseが使われます。`min_version`は、このrepositoryが対応するmiseの最低versionを示すもので、mise自体を固定する設定ではありません。miseは外部のregistryやbackendと連携するため、公式ドキュメントでは特定versionへの固定より最低versionの指定が推奨されています。[^mise-action][^mise-min-version]
 
 この記事を書いた時点の`jdx/mise-action` v4.3.0は、`mise.lock`を作業directoryまたは親directoryから探します。検出した場合、内部で`mise install --locked`を実行します。
 
@@ -551,10 +557,12 @@ repositoryをcloneした後は、`mise install`、`mise run setup`、`mise run c
 [^task-configuration]: [Task Configuration | mise-en-place](https://mise.jdx.dev/tasks/task-configuration.html)
 [^mise-node]: [Node | mise-en-place](https://mise.jdx.dev/lang/node.html)
 [^mise-python]: [Python: mise & uv | mise-en-place](https://mise.jdx.dev/lang/python.html#mise-uv)
+[^mise-getting-started]: [Getting Started | mise-en-place](https://mise.jdx.dev/getting-started.html)
 [^trust]: [mise trust | mise-en-place](https://mise.jdx.dev/cli/trust.html)
 [^activate]: [mise activate | mise-en-place](https://mise.jdx.dev/cli/activate.html)
 [^task-validate]: [mise tasks validate | mise-en-place](https://mise.jdx.dev/cli/tasks/validate.html)
 [^mise-action]: [jdx/mise-action](https://github.com/jdx/mise-action/tree/c2a87611a18de5b3828c5652fe268e992400cb5c)
+[^mise-min-version]: [Minimum mise version | mise v2026.8.14](https://github.com/jdx/mise/blob/v2026.8.14/docs/configuration.md#L314-L336)
 [^generate-github-action]: [generate/github_action.rs | jdx/mise v2026.8.14](https://github.com/jdx/mise/blob/v2026.8.14/src/cli/generate/github_action.rs)
 [^environments]: [Environments | mise-en-place](https://mise.jdx.dev/environments/)
 [^hooks]: [Hooks | mise-en-place](https://mise.jdx.dev/hooks.html)
