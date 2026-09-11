@@ -382,13 +382,12 @@ sed "s|$PWD/||" /tmp/mise-tasks-check.log | grep -E '^\[(openapi|openapi:format|
 pytest、Ruff、OpenAPI定義の生成は、ほかの`task`の完了を待たずに始まりました。
 OpenAPI定義が生成された後に`openapi:format`が動き、最後に`lint:format`が実行されています。
 
-Gitの確認コマンドは、2026-09-12にmacOS arm64、`/bin/sh`、Git 2.50.1で別途確認しました。
-一時ディレクトリにGitリポジトリを作り、次の2つのコマンドを順に実行しています。
-最初のコマンドが失敗した場合は、次のコマンドを実行しません。
+Gitの確認コマンドは、2026-09-12（JST）にmacOS arm64、`/bin/sh`、Git 2.50.1で別途確認しました。
+一時ディレクトリにGitリポジトリを作り、2つのコマンドを`&&`でつないで`/bin/sh`から実行しています。
+`&&`でつなぐと、最初のコマンドが失敗した場合は、次のコマンドを実行しません。
 
 ```shell
-git ls-files --error-unmatch -- openapi.yaml > /dev/null
-git diff --exit-code HEAD -- openapi.yaml
+git ls-files --error-unmatch -- openapi.yaml > /dev/null && git diff --exit-code HEAD -- openapi.yaml
 ```
 
 | `openapi.yaml`の状態 | 確認結果 |
