@@ -113,7 +113,8 @@ def version() -> dict[str, str]:
 ```
 
 YAMLへの書き出しにはPyYAMLを使います。
-今回は、前の記事で作った`pyproject.toml`の開発用依存パッケージへPyYAMLを追加し、`uv.lock`を更新しました[^pyyaml]。
+今回は、前の記事で作った`pyproject.toml`の`[dependency-groups]`にある`dev`へPyYAMLを追加し、`uv.lock`を更新しました[^pyyaml]。
+`dev`には、テストやコードのチェック、今回のOpenAPI定義の生成など、開発時に使うライブラリやツールを指定しています。
 
 ```toml
 [dependency-groups]
@@ -125,7 +126,7 @@ dev = [
 ```
 
 `package.json`の`scripts`には、YAML形式のOpenAPI定義を整形するコマンドを追加します。
-`--stdin-filepath openapi.yaml`を指定すると、Prettierは標準入力の内容を`openapi.yaml`として扱います。
+`--stdin-filepath openapi.yaml`を指定すると、Prettierは指定したファイル名からパーサを判定し、標準入力の内容をYAMLとして整形します。
 miseからは`pnpm run openapi:format`を呼び出します[^prettier-cli]。
 
 ```json
@@ -454,7 +455,8 @@ generated .generated/openapi.raw.yaml
 ```
 
 この判定は、`experimental`であるTask Output Cacheとは別の機能です。
-`outputs`を省略した場合は、miseが内部ファイルへ実行時刻を記録する`outputs = { auto = true }`も使えます。
+`sources`を指定して`outputs`を省略した場合は、`outputs = { auto = true }`がデフォルトで使われます。
+この場合、miseは内部ファイルへ実行時刻を記録し、次回の更新判定に使います。
 
 また、更新日時ではなく内容のハッシュで判定する`task.source_freshness_hash_contents`という設定もあります。
 今回は標準設定の更新日時による判定だけを確認しました[^task-configuration-versioned]。
@@ -496,7 +498,8 @@ macOSとLinuxでも制限方法や例外が異なります。
 前の記事で作ったGitHub Actionsのワークフローは、`mise run check`を呼び出しています。
 今回`task`の依存関係を増やしても、
 ワークフローへRuff、pytest、OpenAPI定義の生成、Prettierのコマンドを個別に追加する必要はありません。
-生成した`openapi.yaml`のコミット漏れも、`lint:format`から実行する`git diff --exit-code`で検出します。
+生成した`openapi.yaml`に差分が出たのにもかかわらずコミットされていない場合は、
+`lint:format`から実行する`git diff --exit-code`で検出します。
 
 GitHub Actionsでは、実行するトリガ、ランナー、権限、マトリックスなどを定義します。
 開発時の確認内容と実行順はmiseの`task`へ書き、ローカルとCIから同じ`mise run check`を呼び出します。
@@ -539,7 +542,7 @@ GNU Makeにも、依存関係と更新日時を元に再実行を判断する機
 
 ## 公式Cookbookにある利用例
 
-公式Cookbookでは、Pythonプロジェクトの依存パッケージのインストール、アプリケーションの実行、テスト、lintを、
+公式Cookbookでは、Pythonプロジェクトの依存パッケージのインストール、アプリケーションの実行、テスト、lintを
 `task`として定義する例が紹介されています。
 Node.jsの例には、依存パッケージのインストール、開発サーバ、lint、テスト、ビルドがあります。
 pnpmを使う例では、`sources`と`outputs`を指定して、
@@ -578,7 +581,7 @@ Task Output CacheとGitリポジトリから取得するRemote Tasksも`experime
 ## まとめ
 
 開発用コマンドをmiseの`task`にまとめると、使用する言語やパッケージ管理方法が異なっていても、
-チームでは`mise run check`を実行すればよくなります。
+チーム全員が同じ`mise run check`で確認できます。
 今回試した範囲では、Ruff、pytest、OpenAPI定義の生成、Prettierによる整形を同じコマンドから実行できる点が、
 mise tasksを使う一番分かりやすい理由でした。
 
