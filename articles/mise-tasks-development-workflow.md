@@ -359,10 +359,12 @@ miseは、依存関係を満たしている`task`を並行して実行します�
 初回は生成した`openapi.yaml`を内容確認後にコミットしておき、検証のために生成物だけを削除した状態から始めます。
 出力へ`task`名を付け、実行順が分かる行を`grep`で取り出しました。
 `sed`は、検証用ディレクトリの絶対パスを相対パスへ置き換えるために使っています。
+ここでは並列実行と生成・整形の順序を見るため、Gitの確認コマンド行は`grep -v`で除外します。
+出力は初回検証時のもので、見直したGitの確認コマンドの検証結果は後述します。
 
 ```shell
 mise run --output prefix check > /tmp/mise-tasks-check.log 2>&1
-sed "s|$PWD/||" /tmp/mise-tasks-check.log | grep -E '^\[(openapi|openapi:format|lint:python|lint:format|test)\] (\$|generated|All checks passed!|All matched files use Prettier code style!|[0-9]+ passed in)'
+sed "s|$PWD/||" /tmp/mise-tasks-check.log | grep -E '^\[(openapi|openapi:format|lint:python|lint:format|test)\] (\$|generated|All checks passed!|All matched files use Prettier code style!|[0-9]+ passed in)' | grep -v '^\[lint:format\] \$ git '
 ```
 
 ```text
@@ -375,14 +377,28 @@ sed "s|$PWD/||" /tmp/mise-tasks-check.log | grep -E '^\[(openapi|openapi:format|
 [test] 1 passed in 0.10s
 [lint:format] $ pnpm --silent run format:check
 [lint:format] All matched files use Prettier code style!
-[lint:format] $ git diff --exit-code -- openapi.yaml
 ```
-
-この出力は初回検証時のものです。
-記事の見直しでGitの確認コマンドを上記の2つへ変更し、未追跡ファイルやステージ済みの未コミット変更も検出できるようにしました。
 
 pytest、Ruff、OpenAPI定義の生成は、ほかの`task`の完了を待たずに始まりました。
 OpenAPI定義が生成された後に`openapi:format`が動き、最後に`lint:format`が実行されています。
+
+Gitの確認コマンドは、2026-09-12にmacOS arm64、`/bin/sh`、Git 2.50.1で別途確認しました。
+一時ディレクトリにGitリポジトリを作り、次の2つのコマンドを順に実行しています。
+最初のコマンドが失敗した場合は、次のコマンドを実行しません。
+
+```shell
+git ls-files --error-unmatch -- openapi.yaml > /dev/null
+git diff --exit-code HEAD -- openapi.yaml
+```
+
+| `openapi.yaml`の状態 | 確認結果 |
+| --- | --- |
+| コミット済みで変更なし | 両方とも成功 |
+| 変更後、未ステージ | `git diff`が失敗 |
+| 変更後、ステージ済みで未コミット | `git diff`が失敗 |
+| 未追跡 | `git ls-files`が失敗 |
+
+この追加確認はGitのコマンドだけを対象としており、`mise run check`全体の再実行結果ではありません。
 
 変更せずにもう一度`check`を実行し、どの`task`が実行または省略されたか分かる行を取り出します。
 
