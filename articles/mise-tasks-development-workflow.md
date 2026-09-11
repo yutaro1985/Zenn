@@ -132,11 +132,15 @@ miseからは`pnpm run openapi:format`を呼び出します[^prettier-cli]。
 ```json
 {
   "scripts": {
-    "openapi:format": "prettier --stdin-filepath openapi.yaml < .generated/openapi.raw.yaml > openapi.yaml",
+    "openapi:format": "prettier --stdin-filepath openapi.yaml < .generated/openapi.raw.yaml > .generated/openapi.formatted.yaml && mv .generated/openapi.formatted.yaml openapi.yaml",
     "format:check": "prettier --check README.md package.json openapi.yaml"
   }
 }
 ```
+
+整形結果はいったん`.generated/openapi.formatted.yaml`へ書き、Prettierが成功した場合だけ`openapi.yaml`へ移します。
+直接`openapi.yaml`へ書き出すと、整形に失敗してもファイルは空になり、更新日時も新しくなることがあります。
+その状態で再実行すると、miseが生成物は新しいと判断して整形を省略してしまうためです。
 
 `pyproject.toml`と`package.json`を変更した後に`mise run setup`を実行し、PyYAMLとPrettierをインストールしました。
 以降の実行結果は、この準備を終えた状態で確認しています。
@@ -224,7 +228,8 @@ description = "PrettierとOpenAPI定義を確認する"
 depends = ["openapi:format"]
 run = [
   "pnpm --silent run format:check",
-  "git diff --exit-code -- openapi.yaml",
+  "git ls-files --error-unmatch -- openapi.yaml > /dev/null",
+  "git diff --exit-code HEAD -- openapi.yaml",
 ]
 
 [tasks.check]
@@ -234,7 +239,9 @@ depends = ["lint:python", "lint:format", "test"]
 
 `openapi:format`はFile Tasksで定義した`openapi`へ依存します。
 `lint:format`は整形後の`openapi.yaml`を確認するため、`openapi:format`へ依存させました。
-Prettierによる整形結果の確認後、`git diff --exit-code`でGitに記録した`openapi.yaml`との差分も確認します。
+Prettierによる整形結果の確認後、`git ls-files --error-unmatch`で`openapi.yaml`がGitの管理対象に含まれることを確認します。
+続いて`git diff --exit-code HEAD`で、最後のコミットと作業ツリーの差分を確認します。
+`HEAD`を指定すると、`git add`でステージした後の未コミット変更も検出できます。
 FastAPIの変更によって生成物にも差分が出たのにもかかわらず、
 生成したOpenAPI定義をコミットし忘れた場合は、このコマンドが失敗します。
 
@@ -349,6 +356,7 @@ miseは、依存関係を満たしている`task`を並行して実行します�
 `openapi:format`は`openapi`の完了を待ち、`lint:format`は`openapi:format`の完了を待ちます。
 
 生成物がない状態で`check`の`task`を実行してみます。
+初回は生成した`openapi.yaml`を内容確認後にコミットしておき、検証のために生成物だけを削除した状態から始めます。
 出力へ`task`名を付け、実行順が分かる行を`grep`で取り出しました。
 `sed`は、検証用ディレクトリの絶対パスを相対パスへ置き換えるために使っています。
 
@@ -369,6 +377,9 @@ sed "s|$PWD/||" /tmp/mise-tasks-check.log | grep -E '^\[(openapi|openapi:format|
 [lint:format] All matched files use Prettier code style!
 [lint:format] $ git diff --exit-code -- openapi.yaml
 ```
+
+この出力は初回検証時のものです。
+記事の見直しでGitの確認コマンドを上記の2つへ変更し、未追跡ファイルやステージ済みの未コミット変更も検出できるようにしました。
 
 pytest、Ruff、OpenAPI定義の生成は、ほかの`task`の完了を待たずに始まりました。
 OpenAPI定義が生成された後に`openapi:format`が動き、最後に`lint:format`が実行されています。
@@ -499,7 +510,7 @@ macOSとLinuxでも制限方法や例外が異なります。
 今回`task`の依存関係を増やしても、
 ワークフローへRuff、pytest、OpenAPI定義の生成、Prettierのコマンドを個別に追加する必要はありません。
 生成した`openapi.yaml`に差分が出たのにもかかわらずコミットされていない場合は、
-`lint:format`から実行する`git diff --exit-code`で検出します。
+`lint:format`から実行する`git diff --exit-code HEAD`で検出します。
 
 GitHub Actionsでは、実行するトリガ、ランナー、権限、マトリックスなどを定義します。
 開発時の確認内容と実行順はmiseの`task`へ書き、ローカルとCIから同じ`mise run check`を呼び出します。
