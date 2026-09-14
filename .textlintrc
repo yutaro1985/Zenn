@@ -1,6 +1,7 @@
 {
   "filters": {},
   "rules": {
+    "@cffnpwr/textlint-rule-sentence-per-line": true,
     "prh": {
       "rulePaths" :[".github/workflows/rules/WEB+DB_PRESS.yml"]
     },
